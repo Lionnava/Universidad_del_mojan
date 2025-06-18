@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress"
 import { UserPlus, ArrowLeft, ArrowRight, Check, User, GraduationCap, Home, Heart } from "lucide-react"
 import Link from "next/link"
+import { sqliteClient } from "@/lib/sqlite-client"
 
 export default function RegistroNuevo() {
   const [currentStep, setCurrentStep] = useState(1)
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     // Datos Personales
     cedula: "",
@@ -28,7 +30,7 @@ export default function RegistroNuevo() {
     direccion: "",
 
     // Datos Académicos
-    carrera_deseada: "",
+    carrera_id: "",
     modalidad_estudio: "",
     turno_preferido: "",
     nivel_educativo_anterior: "",
@@ -42,7 +44,6 @@ export default function RegistroNuevo() {
     ingresos_familiares: "",
     personas_dependen: "",
     tipo_vivienda: "",
-    servicios_basicos: "",
     transporte: "",
 
     // Datos Familiares
@@ -69,9 +70,17 @@ export default function RegistroNuevo() {
   }
 
   const handleSubmit = async () => {
-    // Aquí iría la lógica para enviar los datos a la base de datos
-    console.log("Datos del formulario:", formData)
-    alert("Registro enviado exitosamente. Recibirás una confirmación por email.")
+    setLoading(true)
+    try {
+      await sqliteClient.createAspirante(formData)
+      alert("Registro enviado exitosamente. Recibirás una confirmación por email.")
+      window.location.href = "/estudiantes"
+    } catch (error) {
+      console.error("Error enviando registro:", error)
+      alert("Error al enviar el registro. Por favor intenta nuevamente.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const nextStep = () => {
@@ -91,9 +100,9 @@ export default function RegistroNuevo() {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-4">
-          <Link href="/" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4">
+          <Link href="/estudiantes" className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4">
             <ArrowLeft className="h-4 w-4" />
-            Volver al inicio
+            Volver a estudiantes
           </Link>
           <div className="bg-blue-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
             <UserPlus className="h-8 w-8 text-white" />
@@ -269,17 +278,17 @@ export default function RegistroNuevo() {
             {currentStep === 2 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="carrera_deseada">Carrera de Interés *</Label>
-                  <Select onValueChange={(value) => handleInputChange("carrera_deseada", value)}>
+                  <Label htmlFor="carrera_id">Carrera de Interés *</Label>
+                  <Select onValueChange={(value) => handleInputChange("carrera_id", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar carrera" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ingenieria">Ingeniería en Informática</SelectItem>
-                      <SelectItem value="medicina">Medicina</SelectItem>
-                      <SelectItem value="derecho">Derecho</SelectItem>
-                      <SelectItem value="administracion">Administración</SelectItem>
-                      <SelectItem value="enfermeria">Enfermería</SelectItem>
+                      <SelectItem value="1">Ingeniería en Informática</SelectItem>
+                      <SelectItem value="2">Medicina</SelectItem>
+                      <SelectItem value="3">Derecho</SelectItem>
+                      <SelectItem value="4">Administración</SelectItem>
+                      <SelectItem value="5">Enfermería</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -560,9 +569,9 @@ export default function RegistroNuevo() {
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               ) : (
-                <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700">
+                <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700" disabled={loading}>
                   <Check className="h-4 w-4 mr-2" />
-                  Enviar Solicitud
+                  {loading ? "Enviando..." : "Enviar Solicitud"}
                 </Button>
               )}
             </div>

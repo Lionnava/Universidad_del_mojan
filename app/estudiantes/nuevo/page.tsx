@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,8 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ArrowLeft, Save, User } from "lucide-react"
 import Link from "next/link"
-import { estudiantesService, carrerasService } from "@/lib/database"
-import { useEffect } from "react"
+import { sqliteClient } from "@/lib/sqlite-client"
 
 export default function NuevoEstudiante() {
   const [carreras, setCarreras] = useState<any[]>([])
@@ -37,7 +36,7 @@ export default function NuevoEstudiante() {
 
   const loadCarreras = async () => {
     try {
-      const data = await carrerasService.getAll()
+      const data = await sqliteClient.getCarreras()
       setCarreras(data)
     } catch (error) {
       console.error("Error cargando carreras:", error)
@@ -56,14 +55,13 @@ export default function NuevoEstudiante() {
     setLoading(true)
 
     try {
-      await estudiantesService.create({
+      await sqliteClient.createEstudiante({
         ...formData,
         carrera_id: Number.parseInt(formData.carrera_id),
         fecha_ingreso: new Date().toISOString().split("T")[0],
       })
 
       alert("Estudiante registrado exitosamente")
-      // Redirigir a la lista de estudiantes
       window.location.href = "/estudiantes"
     } catch (error) {
       console.error("Error registrando estudiante:", error)
