@@ -1,161 +1,282 @@
-import Database from "better-sqlite3"
-import path from "path"
+import { sql } from "@vercel/postgres"
 
-// Crear la base de datos SQLite
-const dbPath = path.join(process.cwd(), "data", "universidad.db")
-const db = new Database(dbPath)
-
-// Habilitar claves foráneas
-db.pragma("foreign_keys = ON")
-
-// Inicializar la base de datos
-export function initializeDatabase() {
-  // Crear directorio de datos si no existe
-  const fs = require("fs")
-  const dataDir = path.join(process.cwd(), "data")
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true })
-  }
-
-  // Crear tablas
-  createTables()
-  seedInitialData()
+// Tipos de datos
+export interface Carrera {
+  id: number
+  nombre: string
+  codigo: string
+  duracion_trayectos: number
+  created_at: string
+  updated_at: string
 }
 
-function createTables() {
+export interface Usuario {
+  id: number
+  username: string
+  email: string
+  password_hash: string
+  rol: "estudiante" | "profesor" | "analista" | "gerencial"
+  activo: boolean
+  ultimo_acceso?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Aspirante {
+  id: number
+  cedula: string
+  nombres: string
+  apellidos: string
+  email?: string
+  telefono?: string
+  fecha_nacimiento?: string
+  lugar_nacimiento?: string
+  nacionalidad?: string
+  estado_civil?: string
+  sexo?: string
+  direccion?: string
+  carrera_id?: number
+  modalidad_estudio?: string
+  turno_preferido?: string
+  nivel_educativo_anterior?: string
+  institucion_procedencia?: string
+  año_graduacion?: number
+  promedio_anterior?: number
+  trabaja?: boolean
+  ocupacion?: string
+  ingresos_familiares?: string
+  personas_dependen?: number
+  tipo_vivienda?: string
+  transporte?: string
+  nombre_padre?: string
+  cedula_padre?: string
+  telefono_padre?: string
+  ocupacion_padre?: string
+  nombre_madre?: string
+  cedula_madre?: string
+  telefono_madre?: string
+  ocupacion_madre?: string
+  contacto_emergencia?: string
+  telefono_emergencia?: string
+  estado: "Pendiente" | "Aprobado" | "Rechazado" | "En Revisión"
+  fecha_solicitud: string
+  documentos_completos: boolean
+  usuario_id?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Estudiante {
+  id: number
+  cedula: string
+  nombres: string
+  apellidos: string
+  email?: string
+  telefono?: string
+  fecha_nacimiento?: string
+  direccion?: string
+  carrera_id?: number
+  trayecto_actual: number
+  trimestre_actual: number
+  estado: "Activo" | "Inactivo" | "Graduado" | "Retirado" | "Pre-inscrito"
+  fecha_ingreso: string
+  usuario_id?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Profesor {
+  id: number
+  cedula: string
+  nombres: string
+  apellidos: string
+  email?: string
+  telefono?: string
+  especialidad?: string
+  titulo_academico?: string
+  estado: "Activo" | "Inactivo"
+  fecha_ingreso: string
+  usuario_id?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Materia {
+  id: number
+  nombre: string
+  codigo: string
+  creditos: number
+  horas_teoricas: number
+  horas_practicas: number
+  trayecto: number
+  trimestre: number
+  carrera_id?: number
+  prerequisitos?: string
+  descripcion?: string
+  estado: "Activa" | "Inactiva"
+  created_at: string
+  updated_at: string
+}
+
+export interface Constancia {
+  id: number
+  estudiante_id: number
+  tipo: "notas" | "estudios" | "preinscripcion" | "inscripcion"
+  codigo_verificacion: string
+  contenido?: string
+  fecha_generacion: string
+  valida_hasta?: string
+  descargada: boolean
+  ip_generacion?: string
+  created_at: string
+}
+
+// Inicializar la base de datos
+export async function initializeDatabase() {
+  try {
+    // Crear tablas si no existen
+    await createTables()
+    await seedInitialData()
+    console.log("Base de datos inicializada correctamente")
+  } catch (error) {
+    console.error("Error inicializando base de datos:", error)
+  }
+}
+
+async function createTables() {
   // Tabla de carreras
-  db.exec(`
+  await sql`
     CREATE TABLE IF NOT EXISTS carreras (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nombre TEXT NOT NULL,
-      codigo TEXT UNIQUE NOT NULL,
+      id SERIAL PRIMARY KEY,
+      nombre VARCHAR(255) NOT NULL,
+      codigo VARCHAR(10) UNIQUE NOT NULL,
       duracion_trayectos INTEGER NOT NULL DEFAULT 4,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
-  `)
+  `
 
   // Tabla de períodos académicos
-  db.exec(`
+  await sql`
     CREATE TABLE IF NOT EXISTS periodos_academicos (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nombre TEXT NOT NULL,
+      id SERIAL PRIMARY KEY,
+      nombre VARCHAR(255) NOT NULL,
       fecha_inicio DATE NOT NULL,
       fecha_fin DATE NOT NULL,
       activo BOOLEAN DEFAULT FALSE,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
-  `)
+  `
 
   // Tabla de usuarios
-  db.exec(`
+  await sql`
     CREATE TABLE IF NOT EXISTS usuarios (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
-      rol TEXT NOT NULL CHECK (rol IN ('estudiante', 'profesor', 'analista', 'gerencial')),
+      id SERIAL PRIMARY KEY,
+      username VARCHAR(50) UNIQUE NOT NULL,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      rol VARCHAR(20) NOT NULL CHECK (rol IN ('estudiante', 'profesor', 'analista', 'gerencial')),
       activo BOOLEAN DEFAULT TRUE,
-      ultimo_acceso DATETIME,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ultimo_acceso TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
-  `)
+  `
 
   // Tabla de aspirantes
-  db.exec(`
+  await sql`
     CREATE TABLE IF NOT EXISTS aspirantes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      cedula TEXT UNIQUE NOT NULL,
-      nombres TEXT NOT NULL,
-      apellidos TEXT NOT NULL,
-      email TEXT,
-      telefono TEXT,
+      id SERIAL PRIMARY KEY,
+      cedula VARCHAR(20) UNIQUE NOT NULL,
+      nombres VARCHAR(255) NOT NULL,
+      apellidos VARCHAR(255) NOT NULL,
+      email VARCHAR(255),
+      telefono VARCHAR(20),
       fecha_nacimiento DATE,
-      lugar_nacimiento TEXT,
-      nacionalidad TEXT,
-      estado_civil TEXT,
-      sexo TEXT,
+      lugar_nacimiento VARCHAR(255),
+      nacionalidad VARCHAR(100),
+      estado_civil VARCHAR(50),
+      sexo VARCHAR(20),
       direccion TEXT,
       carrera_id INTEGER REFERENCES carreras(id),
-      modalidad_estudio TEXT,
-      turno_preferido TEXT,
-      nivel_educativo_anterior TEXT,
-      institucion_procedencia TEXT,
+      modalidad_estudio VARCHAR(100),
+      turno_preferido VARCHAR(50),
+      nivel_educativo_anterior VARCHAR(255),
+      institucion_procedencia VARCHAR(255),
       año_graduacion INTEGER,
-      promedio_anterior REAL,
+      promedio_anterior DECIMAL(4,2),
       trabaja BOOLEAN,
-      ocupacion TEXT,
-      ingresos_familiares TEXT,
+      ocupacion VARCHAR(255),
+      ingresos_familiares VARCHAR(100),
       personas_dependen INTEGER,
-      tipo_vivienda TEXT,
-      transporte TEXT,
-      nombre_padre TEXT,
-      cedula_padre TEXT,
-      telefono_padre TEXT,
-      ocupacion_padre TEXT,
-      nombre_madre TEXT,
-      cedula_madre TEXT,
-      telefono_madre TEXT,
-      ocupacion_madre TEXT,
-      contacto_emergencia TEXT,
-      telefono_emergencia TEXT,
-      estado TEXT DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'Aprobado', 'Rechazado', 'En Revisión')),
-      fecha_solicitud DATETIME DEFAULT CURRENT_TIMESTAMP,
+      tipo_vivienda VARCHAR(100),
+      transporte VARCHAR(100),
+      nombre_padre VARCHAR(255),
+      cedula_padre VARCHAR(20),
+      telefono_padre VARCHAR(20),
+      ocupacion_padre VARCHAR(255),
+      nombre_madre VARCHAR(255),
+      cedula_madre VARCHAR(20),
+      telefono_madre VARCHAR(20),
+      ocupacion_madre VARCHAR(255),
+      contacto_emergencia VARCHAR(255),
+      telefono_emergencia VARCHAR(20),
+      estado VARCHAR(20) DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'Aprobado', 'Rechazado', 'En Revisión')),
+      fecha_solicitud TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       documentos_completos BOOLEAN DEFAULT FALSE,
       usuario_id INTEGER REFERENCES usuarios(id),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
-  `)
+  `
 
   // Tabla de estudiantes
-  db.exec(`
+  await sql`
     CREATE TABLE IF NOT EXISTS estudiantes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      cedula TEXT UNIQUE NOT NULL,
-      nombres TEXT NOT NULL,
-      apellidos TEXT NOT NULL,
-      email TEXT,
-      telefono TEXT,
+      id SERIAL PRIMARY KEY,
+      cedula VARCHAR(20) UNIQUE NOT NULL,
+      nombres VARCHAR(255) NOT NULL,
+      apellidos VARCHAR(255) NOT NULL,
+      email VARCHAR(255),
+      telefono VARCHAR(20),
       fecha_nacimiento DATE,
       direccion TEXT,
       carrera_id INTEGER REFERENCES carreras(id),
       trayecto_actual INTEGER DEFAULT 1,
       trimestre_actual INTEGER DEFAULT 1,
-      estado TEXT DEFAULT 'Activo' CHECK (estado IN ('Activo', 'Inactivo', 'Graduado', 'Retirado', 'Pre-inscrito')),
+      estado VARCHAR(20) DEFAULT 'Activo' CHECK (estado IN ('Activo', 'Inactivo', 'Graduado', 'Retirado', 'Pre-inscrito')),
       fecha_ingreso DATE DEFAULT CURRENT_DATE,
       usuario_id INTEGER REFERENCES usuarios(id),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
-  `)
+  `
 
   // Tabla de profesores
-  db.exec(`
+  await sql`
     CREATE TABLE IF NOT EXISTS profesores (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      cedula TEXT UNIQUE NOT NULL,
-      nombres TEXT NOT NULL,
-      apellidos TEXT NOT NULL,
-      email TEXT,
-      telefono TEXT,
-      especialidad TEXT,
-      titulo_academico TEXT,
-      estado TEXT DEFAULT 'Activo' CHECK (estado IN ('Activo', 'Inactivo')),
+      id SERIAL PRIMARY KEY,
+      cedula VARCHAR(20) UNIQUE NOT NULL,
+      nombres VARCHAR(255) NOT NULL,
+      apellidos VARCHAR(255) NOT NULL,
+      email VARCHAR(255),
+      telefono VARCHAR(20),
+      especialidad VARCHAR(255),
+      titulo_academico VARCHAR(255),
+      estado VARCHAR(20) DEFAULT 'Activo' CHECK (estado IN ('Activo', 'Inactivo')),
       fecha_ingreso DATE DEFAULT CURRENT_DATE,
       usuario_id INTEGER REFERENCES usuarios(id),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
-  `)
+  `
 
   // Tabla de materias
-  db.exec(`
+  await sql`
     CREATE TABLE IF NOT EXISTS materias (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nombre TEXT NOT NULL,
-      codigo TEXT UNIQUE NOT NULL,
+      id SERIAL PRIMARY KEY,
+      nombre VARCHAR(255) NOT NULL,
+      codigo VARCHAR(20) UNIQUE NOT NULL,
       creditos INTEGER NOT NULL,
       horas_teoricas INTEGER DEFAULT 0,
       horas_practicas INTEGER DEFAULT 0,
@@ -164,529 +285,273 @@ function createTables() {
       carrera_id INTEGER REFERENCES carreras(id),
       prerequisitos TEXT,
       descripcion TEXT,
-      estado TEXT DEFAULT 'Activa' CHECK (estado IN ('Activa', 'Inactiva')),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      estado VARCHAR(20) DEFAULT 'Activa' CHECK (estado IN ('Activa', 'Inactiva')),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
-  `)
+  `
 
   // Tabla de secciones
-  db.exec(`
+  await sql`
     CREATE TABLE IF NOT EXISTS secciones (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       materia_id INTEGER REFERENCES materias(id),
       profesor_id INTEGER REFERENCES profesores(id),
       periodo_id INTEGER REFERENCES periodos_academicos(id),
-      seccion TEXT NOT NULL,
+      seccion VARCHAR(10) NOT NULL,
       cupos_maximos INTEGER NOT NULL,
       cupos_ocupados INTEGER DEFAULT 0,
-      aula TEXT,
-      estado TEXT DEFAULT 'Activa' CHECK (estado IN ('Activa', 'Cerrada', 'Cancelada')),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      aula VARCHAR(50),
+      estado VARCHAR(20) DEFAULT 'Activa' CHECK (estado IN ('Activa', 'Cerrada', 'Cancelada')),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(materia_id, periodo_id, seccion)
     )
-  `)
-
-  // Tabla de horarios
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS horarios (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      seccion_id INTEGER REFERENCES secciones(id),
-      dia_semana INTEGER NOT NULL,
-      hora_inicio TIME NOT NULL,
-      hora_fin TIME NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `)
+  `
 
   // Tabla de inscripciones
-  db.exec(`
+  await sql`
     CREATE TABLE IF NOT EXISTS inscripciones (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       estudiante_id INTEGER REFERENCES estudiantes(id),
       seccion_id INTEGER REFERENCES secciones(id),
       periodo_id INTEGER REFERENCES periodos_academicos(id),
-      tipo TEXT NOT NULL CHECK (tipo IN ('Pre-inscripcion', 'Inscripcion')),
-      estado TEXT DEFAULT 'Activa' CHECK (estado IN ('Activa', 'Retirada', 'Completada')),
-      fecha_inscripcion DATETIME DEFAULT CURRENT_TIMESTAMP,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('Pre-inscripcion', 'Inscripcion')),
+      estado VARCHAR(20) DEFAULT 'Activa' CHECK (estado IN ('Activa', 'Retirada', 'Completada')),
+      fecha_inscripcion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(estudiante_id, seccion_id, periodo_id)
     )
-  `)
-
-  // Tabla de evaluaciones
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS evaluaciones (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      seccion_id INTEGER REFERENCES secciones(id),
-      nombre TEXT NOT NULL,
-      tipo TEXT NOT NULL,
-      fecha_evaluacion DATE,
-      ponderacion REAL NOT NULL,
-      descripcion TEXT,
-      estado TEXT DEFAULT 'Programada' CHECK (estado IN ('Programada', 'En Curso', 'Finalizada')),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `)
-
-  // Tabla de calificaciones
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS calificaciones (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      evaluacion_id INTEGER REFERENCES evaluaciones(id),
-      estudiante_id INTEGER REFERENCES estudiantes(id),
-      nota REAL,
-      observaciones TEXT,
-      fecha_calificacion DATETIME DEFAULT CURRENT_TIMESTAMP,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(evaluacion_id, estudiante_id)
-    )
-  `)
+  `
 
   // Tabla de constancias
-  db.exec(`
+  await sql`
     CREATE TABLE IF NOT EXISTS constancias (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       estudiante_id INTEGER REFERENCES estudiantes(id),
-      tipo TEXT NOT NULL CHECK (tipo IN ('notas', 'estudios', 'preinscripcion', 'inscripcion')),
-      codigo_verificacion TEXT UNIQUE NOT NULL,
+      tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('notas', 'estudios', 'preinscripcion', 'inscripcion')),
+      codigo_verificacion VARCHAR(50) UNIQUE NOT NULL,
       contenido TEXT,
-      fecha_generacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+      fecha_generacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       valida_hasta DATE,
       descargada BOOLEAN DEFAULT FALSE,
-      ip_generacion TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ip_generacion VARCHAR(45),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
-  `)
-
-  // Tabla de auditoría
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS auditoria (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      tabla TEXT NOT NULL,
-      operacion TEXT NOT NULL CHECK (operacion IN ('INSERT', 'UPDATE', 'DELETE')),
-      registro_id INTEGER NOT NULL,
-      datos_anteriores TEXT,
-      datos_nuevos TEXT,
-      usuario_id INTEGER REFERENCES usuarios(id),
-      fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
-      ip_address TEXT
-    )
-  `)
+  `
 
   // Crear índices
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_aspirantes_cedula ON aspirantes(cedula);
-    CREATE INDEX IF NOT EXISTS idx_estudiantes_cedula ON estudiantes(cedula);
-    CREATE INDEX IF NOT EXISTS idx_profesores_cedula ON profesores(cedula);
-    CREATE INDEX IF NOT EXISTS idx_materias_codigo ON materias(codigo);
-    CREATE INDEX IF NOT EXISTS idx_inscripciones_estudiante ON inscripciones(estudiante_id);
-    CREATE INDEX IF NOT EXISTS idx_inscripciones_seccion ON inscripciones(seccion_id);
-    CREATE INDEX IF NOT EXISTS idx_calificaciones_evaluacion ON calificaciones(evaluacion_id);
-    CREATE INDEX IF NOT EXISTS idx_calificaciones_estudiante ON calificaciones(estudiante_id);
-    CREATE INDEX IF NOT EXISTS idx_usuarios_username ON usuarios(username);
-    CREATE INDEX IF NOT EXISTS idx_auditoria_tabla ON auditoria(tabla);
-    CREATE INDEX IF NOT EXISTS idx_auditoria_fecha ON auditoria(fecha);
-  `)
+  await sql`CREATE INDEX IF NOT EXISTS idx_aspirantes_cedula ON aspirantes(cedula)`
+  await sql`CREATE INDEX IF NOT EXISTS idx_estudiantes_cedula ON estudiantes(cedula)`
+  await sql`CREATE INDEX IF NOT EXISTS idx_profesores_cedula ON profesores(cedula)`
+  await sql`CREATE INDEX IF NOT EXISTS idx_materias_codigo ON materias(codigo)`
+  await sql`CREATE INDEX IF NOT EXISTS idx_inscripciones_estudiante ON inscripciones(estudiante_id)`
+  await sql`CREATE INDEX IF NOT EXISTS idx_usuarios_username ON usuarios(username)`
 }
 
-function seedInitialData() {
+async function seedInitialData() {
   // Verificar si ya hay datos
-  const carrerasCount = db.prepare("SELECT COUNT(*) as count FROM carreras").get() as { count: number }
-  if (carrerasCount.count > 0) return
+  const { rows: carrerasCount } = await sql`SELECT COUNT(*) as count FROM carreras`
+  if (carrerasCount[0].count > 0) return
 
   // Insertar carreras
-  const insertCarrera = db.prepare(`
-    INSERT INTO carreras (nombre, codigo, duracion_trayectos) 
-    VALUES (?, ?, ?)
-  `)
-
-  const carreras = [
-    ["Ingeniería en Informática", "INF", 4],
-    ["Medicina", "MED", 6],
-    ["Derecho", "DER", 4],
-    ["Administración", "ADM", 4],
-    ["Enfermería", "ENF", 3],
-  ]
-
-  carreras.forEach((carrera) => insertCarrera.run(...carrera))
+  await sql`
+    INSERT INTO carreras (nombre, codigo, duracion_trayectos) VALUES
+    ('Ingeniería en Informática', 'INF', 4),
+    ('Medicina', 'MED', 6),
+    ('Derecho', 'DER', 4),
+    ('Administración', 'ADM', 4),
+    ('Enfermería', 'ENF', 3)
+  `
 
   // Insertar período académico
-  db.prepare(`
+  await sql`
     INSERT INTO periodos_academicos (nombre, fecha_inicio, fecha_fin, activo) 
-    VALUES ('2024-2025', '2024-09-01', '2025-07-31', 1)
-  `).run()
+    VALUES ('2024-2025', '2024-09-01', '2025-07-31', true)
+  `
 
   // Insertar usuarios por defecto
-  const insertUsuario = db.prepare(`
-    INSERT INTO usuarios (username, email, password_hash, rol) 
-    VALUES (?, ?, ?, ?)
-  `)
-
-  const usuarios = [
-    ["admin", "admin@universidad.edu", "demo_hash", "gerencial"],
-    ["analista1", "analista@universidad.edu", "demo_hash", "analista"],
-    ["prof_garcia", "garcia@universidad.edu", "demo_hash", "profesor"],
-    ["est_20123456", "estudiante@universidad.edu", "demo_hash", "estudiante"],
-  ]
-
-  usuarios.forEach((usuario) => insertUsuario.run(...usuario))
+  await sql`
+    INSERT INTO usuarios (username, email, password_hash, rol) VALUES
+    ('admin', 'admin@universidad.edu', 'demo_hash', 'gerencial'),
+    ('analista1', 'analista@universidad.edu', 'demo_hash', 'analista'),
+    ('prof_garcia', 'garcia@universidad.edu', 'demo_hash', 'profesor'),
+    ('est_20123456', 'estudiante@universidad.edu', 'demo_hash', 'estudiante')
+  `
 
   // Insertar profesores
-  const insertProfesor = db.prepare(`
-    INSERT INTO profesores (cedula, nombres, apellidos, email, especialidad, titulo_academico, usuario_id) 
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `)
-
-  const profesores = [
-    ["12345678", "Juan Carlos", "García López", "jgarcia@universidad.edu", "Matemáticas", "Doctor en Matemáticas", 3],
-    [
-      "23456789",
-      "María Elena",
-      "Martínez Silva",
-      "mmartinez@universidad.edu",
-      "Programación",
-      "Ingeniera en Sistemas",
-      null,
-    ],
-    ["34567890", "Pedro Antonio", "López Rodríguez", "plopez@universidad.edu", "Física", "Doctor en Física", null],
-  ]
-
-  profesores.forEach((profesor) => insertProfesor.run(...profesor))
+  await sql`
+    INSERT INTO profesores (cedula, nombres, apellidos, email, especialidad, titulo_academico, usuario_id) VALUES
+    ('12345678', 'Juan Carlos', 'García López', 'jgarcia@universidad.edu', 'Matemáticas', 'Doctor en Matemáticas', 3),
+    ('23456789', 'María Elena', 'Martínez Silva', 'mmartinez@universidad.edu', 'Programación', 'Ingeniera en Sistemas', NULL),
+    ('34567890', 'Pedro Antonio', 'López Rodríguez', 'plopez@universidad.edu', 'Física', 'Doctor en Física', NULL)
+  `
 
   // Insertar materias
-  const insertMateria = db.prepare(`
-    INSERT INTO materias (nombre, codigo, creditos, horas_teoricas, horas_practicas, trayecto, trimestre, carrera_id) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-
-  const materias = [
-    ["Matemática I", "MAT101", 4, 3, 2, 1, 1, 1],
-    ["Programación I", "INF101", 5, 3, 4, 1, 1, 1],
-    ["Física I", "FIS101", 4, 3, 2, 1, 2, 1],
-    ["Programación II", "INF102", 5, 3, 4, 1, 2, 1],
-    ["Matemática II", "MAT102", 4, 3, 2, 1, 2, 1],
-    ["Base de Datos I", "INF201", 4, 2, 4, 2, 1, 1],
-    ["Algoritmos y Estructuras de Datos", "INF202", 5, 3, 4, 2, 1, 1],
-    ["Ingeniería de Software I", "INF301", 4, 3, 2, 3, 1, 1],
-  ]
-
-  materias.forEach((materia) => insertMateria.run(...materia))
+  await sql`
+    INSERT INTO materias (nombre, codigo, creditos, horas_teoricas, horas_practicas, trayecto, trimestre, carrera_id) VALUES
+    ('Matemática I', 'MAT101', 4, 3, 2, 1, 1, 1),
+    ('Programación I', 'INF101', 5, 3, 4, 1, 1, 1),
+    ('Física I', 'FIS101', 4, 3, 2, 1, 2, 1),
+    ('Programación II', 'INF102', 5, 3, 4, 1, 2, 1),
+    ('Matemática II', 'MAT102', 4, 3, 2, 1, 2, 1),
+    ('Base de Datos I', 'INF201', 4, 2, 4, 2, 1, 1),
+    ('Algoritmos y Estructuras de Datos', 'INF202', 5, 3, 4, 2, 1, 1),
+    ('Ingeniería de Software I', 'INF301', 4, 3, 2, 3, 1, 1)
+  `
 
   // Insertar secciones
-  const insertSeccion = db.prepare(`
-    INSERT INTO secciones (materia_id, profesor_id, periodo_id, seccion, cupos_maximos, aula) 
-    VALUES (?, ?, ?, ?, ?, ?)
-  `)
-
-  const secciones = [
-    [1, 1, 1, "A", 30, "Aula 101"],
-    [1, 1, 1, "B", 30, "Aula 102"],
-    [2, 1, 1, "A", 25, "Lab 201"],
-    [3, 3, 1, "A", 35, "Aula 103"],
-    [6, 1, 1, "A", 20, "Lab 204"],
-  ]
-
-  secciones.forEach((seccion) => insertSeccion.run(...seccion))
+  await sql`
+    INSERT INTO secciones (materia_id, profesor_id, periodo_id, seccion, cupos_maximos, aula) VALUES
+    (1, 1, 1, 'A', 30, 'Aula 101'),
+    (1, 1, 1, 'B', 30, 'Aula 102'),
+    (2, 1, 1, 'A', 25, 'Lab 201'),
+    (3, 3, 1, 'A', 35, 'Aula 103'),
+    (6, 1, 1, 'A', 20, 'Lab 204')
+  `
 
   // Insertar estudiantes de ejemplo
-  const insertEstudiante = db.prepare(`
-    INSERT INTO estudiantes (cedula, nombres, apellidos, email, telefono, carrera_id, trayecto_actual, trimestre_actual, usuario_id) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-
-  const estudiantes = [
-    ["20123456", "María José", "González Pérez", "mgonzalez@email.com", "0412-1234567", 1, 2, 1, 4],
-    ["18123456", "Pedro José", "Sánchez García", "psanchez@email.com", "0412-1111111", 1, 3, 2, null],
-    ["19234567", "Miguel Ángel", "Morales Sánchez", "mmorales@email.com", "0412-5555555", 1, 1, 1, null],
-  ]
-
-  estudiantes.forEach((estudiante) => insertEstudiante.run(...estudiante))
+  await sql`
+    INSERT INTO estudiantes (cedula, nombres, apellidos, email, telefono, carrera_id, trayecto_actual, trimestre_actual, usuario_id) VALUES
+    ('20123456', 'María José', 'González Pérez', 'mgonzalez@email.com', '0412-1234567', 1, 2, 1, 4),
+    ('18123456', 'Pedro José', 'Sánchez García', 'psanchez@email.com', '0412-1111111', 1, 3, 2, NULL),
+    ('19234567', 'Miguel Ángel', 'Morales Sánchez', 'mmorales@email.com', '0412-5555555', 1, 1, 1, NULL)
+  `
 
   // Insertar aspirantes de ejemplo
-  const insertAspirante = db.prepare(`
-    INSERT INTO aspirantes (cedula, nombres, apellidos, email, telefono, carrera_id, estado, sexo, nacionalidad) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-
-  const aspirantes = [
-    [
-      "21123456",
-      "Carlos Eduardo",
-      "Rodríguez Silva",
-      "crodriguez@email.com",
-      "0414-2345678",
-      2,
-      "Pendiente",
-      "masculino",
-      "venezolana",
-    ],
-    [
-      "21234567",
-      "Ana Lucía",
-      "Martínez López",
-      "amartinez@email.com",
-      "0416-3456789",
-      3,
-      "En Revisión",
-      "femenino",
-      "venezolana",
-    ],
-    [
-      "21345678",
-      "José Miguel",
-      "Hernández Torres",
-      "jhernandez@email.com",
-      "0424-4567890",
-      1,
-      "Aprobado",
-      "masculino",
-      "venezolana",
-    ],
-  ]
-
-  aspirantes.forEach((aspirante) => insertAspirante.run(...aspirante))
-}
-
-// Datos de demostración
-const DEMO_DATA = {
-  estudiantes: [
-    {
-      id: 1,
-      cedula: "20123456",
-      nombres: "María José",
-      apellidos: "González Pérez",
-      email: "mgonzalez@email.com",
-      telefono: "0412-1234567",
-      carrera_id: 1,
-      trayecto_actual: 2,
-      trimestre_actual: 1,
-      estado: "Activo",
-      fecha_ingreso: "2023-09-01",
-      created_at: "2023-09-01T00:00:00Z",
-      updated_at: "2023-09-01T00:00:00Z",
-      carrera: { nombre: "Ingeniería en Informática", codigo: "INF" },
-    },
-    {
-      id: 2,
-      cedula: "20234567",
-      nombres: "Carlos Eduardo",
-      apellidos: "Rodríguez Silva",
-      email: "crodriguez@email.com",
-      telefono: "0414-2345678",
-      carrera_id: 2,
-      trayecto_actual: 1,
-      trimestre_actual: 2,
-      estado: "Activo",
-      fecha_ingreso: "2024-01-15",
-      created_at: "2024-01-15T00:00:00Z",
-      updated_at: "2024-01-15T00:00:00Z",
-      carrera: { nombre: "Medicina", codigo: "MED" },
-    },
-  ],
-  profesores: [
-    {
-      id: 1,
-      cedula: "12345678",
-      nombres: "Dr. Juan Carlos",
-      apellidos: "García López",
-      email: "jgarcia@universidad.edu",
-      telefono: "0412-1111111",
-      especialidad: "Matemáticas",
-      titulo_academico: "Doctor en Matemáticas",
-      estado: "Activo",
-      fecha_ingreso: "2020-01-01",
-      created_at: "2020-01-01T00:00:00Z",
-      updated_at: "2020-01-01T00:00:00Z",
-    },
-  ],
-  carreras: [
-    {
-      id: 1,
-      nombre: "Ingeniería en Informática",
-      codigo: "INF",
-      duracion_trayectos: 4,
-      created_at: "2020-01-01T00:00:00Z",
-      updated_at: "2020-01-01T00:00:00Z",
-    },
-    {
-      id: 2,
-      nombre: "Medicina",
-      codigo: "MED",
-      duracion_trayectos: 6,
-      created_at: "2020-01-01T00:00:00Z",
-      updated_at: "2020-01-01T00:00:00Z",
-    },
-    {
-      id: 3,
-      nombre: "Derecho",
-      codigo: "DER",
-      duracion_trayectos: 4,
-      created_at: "2020-01-01T00:00:00Z",
-      updated_at: "2020-01-01T00:00:00Z",
-    },
-    {
-      id: 4,
-      nombre: "Administración",
-      codigo: "ADM",
-      duracion_trayectos: 4,
-      created_at: "2020-01-01T00:00:00Z",
-      updated_at: "2020-01-01T00:00:00Z",
-    },
-  ],
-  usuarios: [
-    {
-      id: 1,
-      username: "admin",
-      email: "admin@universidad.edu",
-      password_hash: "demo_hash",
-      rol: "gerencial" as const,
-      activo: true,
-      created_at: "2020-01-01T00:00:00Z",
-      updated_at: "2020-01-01T00:00:00Z",
-    },
-    {
-      id: 2,
-      username: "est_20123456",
-      email: "mgonzalez@email.com",
-      password_hash: "demo_hash",
-      rol: "estudiante" as const,
-      activo: true,
-      created_at: "2023-09-01T00:00:00Z",
-      updated_at: "2023-09-01T00:00:00Z",
-    },
-  ],
+  await sql`
+    INSERT INTO aspirantes (cedula, nombres, apellidos, email, telefono, carrera_id, estado, sexo, nacionalidad) VALUES
+    ('21123456', 'Carlos Eduardo', 'Rodríguez Silva', 'crodriguez@email.com', '0414-2345678', 2, 'Pendiente', 'masculino', 'venezolana'),
+    ('21234567', 'Ana Lucía', 'Martínez López', 'amartinez@email.com', '0416-3456789', 3, 'En Revisión', 'femenino', 'venezolana'),
+    ('21345678', 'José Miguel', 'Hernández Torres', 'jhernandez@email.com', '0424-4567890', 1, 'Aprobado', 'masculino', 'venezolana')
+  `
 }
 
 // Funciones para Carreras
 export const carrerasService = {
-  getAll() {
-    return db.prepare("SELECT * FROM carreras ORDER BY nombre").all()
+  async getAll() {
+    const { rows } = await sql`SELECT * FROM carreras ORDER BY nombre`
+    return rows
   },
 
-  getById(id: number) {
-    return db.prepare("SELECT * FROM carreras WHERE id = ?").get(id)
+  async getById(id: number) {
+    const { rows } = await sql`SELECT * FROM carreras WHERE id = ${id}`
+    return rows[0]
   },
 
-  create(carrera: { nombre: string; codigo: string; duracion_trayectos: number }) {
-    const stmt = db.prepare(`
+  async create(carrera: { nombre: string; codigo: string; duracion_trayectos: number }) {
+    const { rows } = await sql`
       INSERT INTO carreras (nombre, codigo, duracion_trayectos) 
-      VALUES (?, ?, ?)
-    `)
-    const result = stmt.run(carrera.nombre, carrera.codigo, carrera.duracion_trayectos)
-    return this.getById(result.lastInsertRowid as number)
+      VALUES (${carrera.nombre}, ${carrera.codigo}, ${carrera.duracion_trayectos})
+      RETURNING *
+    `
+    return rows[0]
   },
 
-  update(id: number, updates: Partial<{ nombre: string; codigo: string; duracion_trayectos: number }>) {
-    const stmt = db.prepare(`
+  async update(id: number, updates: Partial<{ nombre: string; codigo: string; duracion_trayectos: number }>) {
+    const { rows } = await sql`
       UPDATE carreras 
-      SET nombre = COALESCE(?, nombre), 
-          codigo = COALESCE(?, codigo), 
-          duracion_trayectos = COALESCE(?, duracion_trayectos),
+      SET nombre = COALESCE(${updates.nombre}, nombre), 
+          codigo = COALESCE(${updates.codigo}, codigo), 
+          duracion_trayectos = COALESCE(${updates.duracion_trayectos}, duracion_trayectos),
           updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `)
-    stmt.run(updates.nombre, updates.codigo, updates.duracion_trayectos, id)
-    return this.getById(id)
+      WHERE id = ${id}
+      RETURNING *
+    `
+    return rows[0]
   },
 }
 
 // Funciones para Usuarios
 export const usuariosService = {
-  authenticate(username: string, password: string) {
-    // En producción, aquí verificarías el hash de la contraseña
-    const user = db
-      .prepare(`
+  async authenticate(username: string, password: string) {
+    const { rows } = await sql`
       SELECT * FROM usuarios 
-      WHERE username = ? AND activo = 1
-    `)
-      .get(username)
+      WHERE username = ${username} AND activo = true
+    `
 
+    const user = rows[0]
     if (user) {
       // Actualizar último acceso
-      db.prepare(`
+      await sql`
         UPDATE usuarios 
         SET ultimo_acceso = CURRENT_TIMESTAMP 
-        WHERE id = ?
-      `).run((user as any).id)
+        WHERE id = ${user.id}
+      `
     }
 
     return user
   },
 
-  getAll() {
-    return db.prepare("SELECT * FROM usuarios ORDER BY created_at DESC").all()
+  async getAll() {
+    const { rows } = await sql`SELECT * FROM usuarios ORDER BY created_at DESC`
+    return rows
   },
 
-  getById(id: number) {
-    return db.prepare("SELECT * FROM usuarios WHERE id = ?").get(id)
+  async getById(id: number) {
+    const { rows } = await sql`SELECT * FROM usuarios WHERE id = ${id}`
+    return rows[0]
   },
 
-  create(usuario: { username: string; email: string; password_hash: string; rol: string }) {
-    const stmt = db.prepare(`
+  async create(usuario: { username: string; email: string; password_hash: string; rol: string }) {
+    const { rows } = await sql`
       INSERT INTO usuarios (username, email, password_hash, rol) 
-      VALUES (?, ?, ?, ?)
-    `)
-    const result = stmt.run(usuario.username, usuario.email, usuario.password_hash, usuario.rol)
-    return this.getById(result.lastInsertRowid as number)
+      VALUES (${usuario.username}, ${usuario.email}, ${usuario.password_hash}, ${usuario.rol})
+      RETURNING *
+    `
+    return rows[0]
   },
 
-  update(id: number, updates: any) {
-    const stmt = db.prepare(`
+  async update(id: number, updates: any) {
+    const { rows } = await sql`
       UPDATE usuarios 
-      SET username = COALESCE(?, username),
-          email = COALESCE(?, email),
-          rol = COALESCE(?, rol),
-          activo = COALESCE(?, activo),
+      SET username = COALESCE(${updates.username}, username),
+          email = COALESCE(${updates.email}, email),
+          rol = COALESCE(${updates.rol}, rol),
+          activo = COALESCE(${updates.activo}, activo),
           updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `)
-    stmt.run(updates.username, updates.email, updates.rol, updates.activo, id)
-    return this.getById(id)
+      WHERE id = ${id}
+      RETURNING *
+    `
+    return rows[0]
   },
 }
 
 // Funciones para Aspirantes
 export const aspirantesService = {
-  getAll() {
-    return db
-      .prepare(`
+  async getAll() {
+    const { rows } = await sql`
       SELECT a.*, c.nombre as carrera_nombre, c.codigo as carrera_codigo
       FROM aspirantes a
       LEFT JOIN carreras c ON a.carrera_id = c.id
       ORDER BY a.created_at DESC
-    `)
-      .all()
+    `
+    return rows
   },
 
-  getById(id: number) {
-    return db
-      .prepare(`
+  async getById(id: number) {
+    const { rows } = await sql`
       SELECT a.*, c.nombre as carrera_nombre, c.codigo as carrera_codigo
       FROM aspirantes a
       LEFT JOIN carreras c ON a.carrera_id = c.id
-      WHERE a.id = ?
-    `)
-      .get(id)
+      WHERE a.id = ${id}
+    `
+    return rows[0]
   },
 
-  getByCedula(cedula: string) {
-    return db
-      .prepare(`
+  async getByCedula(cedula: string) {
+    const { rows } = await sql`
       SELECT a.*, c.nombre as carrera_nombre, c.codigo as carrera_codigo
       FROM aspirantes a
       LEFT JOIN carreras c ON a.carrera_id = c.id
-      WHERE a.cedula = ?
-    `)
-      .get(cedula)
+      WHERE a.cedula = ${cedula}
+    `
+    return rows[0]
   },
 
-  create(aspirante: any) {
-    const stmt = db.prepare(`
+  async create(aspirante: any) {
+    const { rows } = await sql`
       INSERT INTO aspirantes (
         cedula, nombres, apellidos, email, telefono, fecha_nacimiento,
         lugar_nacimiento, nacionalidad, estado_civil, sexo, direccion,
@@ -696,250 +561,183 @@ export const aspirantesService = {
         tipo_vivienda, transporte, nombre_padre, cedula_padre,
         telefono_padre, ocupacion_padre, nombre_madre, cedula_madre,
         telefono_madre, ocupacion_madre, contacto_emergencia, telefono_emergencia
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-
-    const result = stmt.run(
-      aspirante.cedula,
-      aspirante.nombres,
-      aspirante.apellidos,
-      aspirante.email,
-      aspirante.telefono,
-      aspirante.fecha_nacimiento,
-      aspirante.lugar_nacimiento,
-      aspirante.nacionalidad,
-      aspirante.estado_civil,
-      aspirante.sexo,
-      aspirante.direccion,
-      aspirante.carrera_id,
-      aspirante.modalidad_estudio,
-      aspirante.turno_preferido,
-      aspirante.nivel_educativo_anterior,
-      aspirante.institucion_procedencia,
-      aspirante.año_graduacion,
-      aspirante.promedio_anterior,
-      aspirante.trabaja,
-      aspirante.ocupacion,
-      aspirante.ingresos_familiares,
-      aspirante.personas_dependen,
-      aspirante.tipo_vivienda,
-      aspirante.transporte,
-      aspirante.nombre_padre,
-      aspirante.cedula_padre,
-      aspirante.telefono_padre,
-      aspirante.ocupacion_padre,
-      aspirante.nombre_madre,
-      aspirante.cedula_madre,
-      aspirante.telefono_madre,
-      aspirante.ocupacion_madre,
-      aspirante.contacto_emergencia,
-      aspirante.telefono_emergencia,
-    )
-
-    return this.getById(result.lastInsertRowid as number)
+      ) VALUES (
+        ${aspirante.cedula}, ${aspirante.nombres}, ${aspirante.apellidos}, 
+        ${aspirante.email}, ${aspirante.telefono}, ${aspirante.fecha_nacimiento},
+        ${aspirante.lugar_nacimiento}, ${aspirante.nacionalidad}, ${aspirante.estado_civil}, 
+        ${aspirante.sexo}, ${aspirante.direccion}, ${aspirante.carrera_id}, 
+        ${aspirante.modalidad_estudio}, ${aspirante.turno_preferido}, 
+        ${aspirante.nivel_educativo_anterior}, ${aspirante.institucion_procedencia}, 
+        ${aspirante.año_graduacion}, ${aspirante.promedio_anterior}, ${aspirante.trabaja}, 
+        ${aspirante.ocupacion}, ${aspirante.ingresos_familiares}, ${aspirante.personas_dependen},
+        ${aspirante.tipo_vivienda}, ${aspirante.transporte}, ${aspirante.nombre_padre}, 
+        ${aspirante.cedula_padre}, ${aspirante.telefono_padre}, ${aspirante.ocupacion_padre},
+        ${aspirante.nombre_madre}, ${aspirante.cedula_madre}, ${aspirante.telefono_madre}, 
+        ${aspirante.ocupacion_madre}, ${aspirante.contacto_emergencia}, ${aspirante.telefono_emergencia}
+      )
+      RETURNING *
+    `
+    return rows[0]
   },
 
-  update(id: number, updates: any) {
-    const stmt = db.prepare(`
+  async update(id: number, updates: any) {
+    const { rows } = await sql`
       UPDATE aspirantes 
-      SET estado = COALESCE(?, estado),
-          documentos_completos = COALESCE(?, documentos_completos),
+      SET estado = COALESCE(${updates.estado}, estado),
+          documentos_completos = COALESCE(${updates.documentos_completos}, documentos_completos),
           updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `)
-    stmt.run(updates.estado, updates.documentos_completos, id)
-    return this.getById(id)
+      WHERE id = ${id}
+      RETURNING *
+    `
+    return rows[0]
   },
 
-  aprobarAspirante(id: number) {
-    const aspirante = this.getById(id)
+  async aprobarAspirante(id: number) {
+    const aspirante = await this.getById(id)
     if (!aspirante) throw new Error("Aspirante no encontrado")
 
     // Crear usuario para el estudiante
-    const usuario = usuariosService.create({
-      username: `est_${(aspirante as any).cedula}`,
-      email: (aspirante as any).email,
+    const usuario = await usuariosService.create({
+      username: `est_${aspirante.cedula}`,
+      email: aspirante.email,
       password_hash: "demo_hash",
       rol: "estudiante",
     })
 
     // Crear registro de estudiante
-    const estudiante = estudiantesService.create({
-      cedula: (aspirante as any).cedula,
-      nombres: (aspirante as any).nombres,
-      apellidos: (aspirante as any).apellidos,
-      email: (aspirante as any).email,
-      telefono: (aspirante as any).telefono,
-      fecha_nacimiento: (aspirante as any).fecha_nacimiento,
-      direccion: (aspirante as any).direccion,
-      carrera_id: (aspirante as any).carrera_id,
+    const estudiante = await estudiantesService.create({
+      cedula: aspirante.cedula,
+      nombres: aspirante.nombres,
+      apellidos: aspirante.apellidos,
+      email: aspirante.email,
+      telefono: aspirante.telefono,
+      fecha_nacimiento: aspirante.fecha_nacimiento,
+      direccion: aspirante.direccion,
+      carrera_id: aspirante.carrera_id,
       trayecto_actual: 1,
       trimestre_actual: 1,
       estado: "Pre-inscrito",
-      usuario_id: (usuario as any).id,
+      usuario_id: usuario.id,
     })
 
     // Actualizar estado del aspirante
-    this.update(id, { estado: "Aprobado" })
+    await this.update(id, { estado: "Aprobado" })
 
     return { estudiante, usuario }
   },
 
-  getEstadisticas() {
-    const stats = db
-      .prepare(`
-      SELECT 
-        estado,
-        COUNT(*) as cantidad
+  async getEstadisticas() {
+    const { rows: porEstado } = await sql`
+      SELECT estado, COUNT(*) as cantidad
       FROM aspirantes 
       GROUP BY estado
-    `)
-      .all()
+    `
 
-    const porCarrera = db
-      .prepare(`
-      SELECT 
-        c.nombre as carrera,
-        COUNT(a.id) as cantidad
+    const { rows: porCarrera } = await sql`
+      SELECT c.nombre as carrera, COUNT(a.id) as cantidad
       FROM aspirantes a
       LEFT JOIN carreras c ON a.carrera_id = c.id
       GROUP BY c.nombre
-    `)
-      .all()
+    `
 
-    return { porEstado: stats, porCarrera }
+    return { porEstado, porCarrera }
   },
 }
 
 // Funciones para Estudiantes
 export const estudiantesService = {
-  getAll() {
-    return db
-      .prepare(`
+  async getAll() {
+    const { rows } = await sql`
       SELECT e.*, c.nombre as carrera_nombre, c.codigo as carrera_codigo,
              u.username, u.email as user_email
       FROM estudiantes e
       LEFT JOIN carreras c ON e.carrera_id = c.id
       LEFT JOIN usuarios u ON e.usuario_id = u.id
       ORDER BY e.created_at DESC
-    `)
-      .all()
+    `
+    return rows
   },
 
-  getById(id: number) {
-    return db
-      .prepare(`
+  async getById(id: number) {
+    const { rows } = await sql`
       SELECT e.*, c.nombre as carrera_nombre, c.codigo as carrera_codigo,
              u.username, u.email as user_email
       FROM estudiantes e
       LEFT JOIN carreras c ON e.carrera_id = c.id
       LEFT JOIN usuarios u ON e.usuario_id = u.id
-      WHERE e.id = ?
-    `)
-      .get(id)
+      WHERE e.id = ${id}
+    `
+    return rows[0]
   },
 
-  getByCedula(cedula: string) {
-    return db
-      .prepare(`
+  async getByCedula(cedula: string) {
+    const { rows } = await sql`
       SELECT e.*, c.nombre as carrera_nombre, c.codigo as carrera_codigo,
              u.username, u.email as user_email
       FROM estudiantes e
       LEFT JOIN carreras c ON e.carrera_id = c.id
       LEFT JOIN usuarios u ON e.usuario_id = u.id
-      WHERE e.cedula = ?
-    `)
-      .get(cedula)
+      WHERE e.cedula = ${cedula}
+    `
+    return rows[0]
   },
 
-  create(estudiante: any) {
-    const stmt = db.prepare(`
+  async create(estudiante: any) {
+    const { rows } = await sql`
       INSERT INTO estudiantes (
         cedula, nombres, apellidos, email, telefono, fecha_nacimiento,
         direccion, carrera_id, trayecto_actual, trimestre_actual,
         estado, usuario_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-
-    const result = stmt.run(
-      estudiante.cedula,
-      estudiante.nombres,
-      estudiante.apellidos,
-      estudiante.email,
-      estudiante.telefono,
-      estudiante.fecha_nacimiento,
-      estudiante.direccion,
-      estudiante.carrera_id,
-      estudiante.trayecto_actual,
-      estudiante.trimestre_actual,
-      estudiante.estado,
-      estudiante.usuario_id,
-    )
-
-    return this.getById(result.lastInsertRowid as number)
+      ) VALUES (
+        ${estudiante.cedula}, ${estudiante.nombres}, ${estudiante.apellidos}, 
+        ${estudiante.email}, ${estudiante.telefono}, ${estudiante.fecha_nacimiento},
+        ${estudiante.direccion}, ${estudiante.carrera_id}, ${estudiante.trayecto_actual}, 
+        ${estudiante.trimestre_actual}, ${estudiante.estado}, ${estudiante.usuario_id}
+      )
+      RETURNING *
+    `
+    return rows[0]
   },
 
-  update(id: number, updates: any) {
-    const stmt = db.prepare(`
+  async update(id: number, updates: any) {
+    const { rows } = await sql`
       UPDATE estudiantes 
-      SET nombres = COALESCE(?, nombres),
-          apellidos = COALESCE(?, apellidos),
-          email = COALESCE(?, email),
-          telefono = COALESCE(?, telefono),
-          direccion = COALESCE(?, direccion),
-          trayecto_actual = COALESCE(?, trayecto_actual),
-          trimestre_actual = COALESCE(?, trimestre_actual),
-          estado = COALESCE(?, estado),
+      SET nombres = COALESCE(${updates.nombres}, nombres),
+          apellidos = COALESCE(${updates.apellidos}, apellidos),
+          email = COALESCE(${updates.email}, email),
+          telefono = COALESCE(${updates.telefono}, telefono),
+          direccion = COALESCE(${updates.direccion}, direccion),
+          trayecto_actual = COALESCE(${updates.trayecto_actual}, trayecto_actual),
+          trimestre_actual = COALESCE(${updates.trimestre_actual}, trimestre_actual),
+          estado = COALESCE(${updates.estado}, estado),
           updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `)
-    stmt.run(
-      updates.nombres,
-      updates.apellidos,
-      updates.email,
-      updates.telefono,
-      updates.direccion,
-      updates.trayecto_actual,
-      updates.trimestre_actual,
-      updates.estado,
-      id,
-    )
-    return this.getById(id)
+      WHERE id = ${id}
+      RETURNING *
+    `
+    return rows[0]
   },
 
-  getEstadisticas() {
-    const porCarrera = db
-      .prepare(`
-      SELECT 
-        c.nombre as carrera,
-        COUNT(e.id) as cantidad
+  async getEstadisticas() {
+    const { rows: porCarrera } = await sql`
+      SELECT c.nombre as carrera, COUNT(e.id) as cantidad
       FROM estudiantes e
       LEFT JOIN carreras c ON e.carrera_id = c.id
       WHERE e.estado = 'Activo'
       GROUP BY c.nombre
-    `)
-      .all()
+    `
 
-    const porTrayecto = db
-      .prepare(`
-      SELECT 
-        trayecto_actual,
-        COUNT(*) as cantidad
+    const { rows: porTrayecto } = await sql`
+      SELECT trayecto_actual, COUNT(*) as cantidad
       FROM estudiantes 
       WHERE estado = 'Activo'
       GROUP BY trayecto_actual
-    `)
-      .all()
+    `
 
-    const porEstado = db
-      .prepare(`
-      SELECT 
-        estado,
-        COUNT(*) as cantidad
+    const { rows: porEstado } = await sql`
+      SELECT estado, COUNT(*) as cantidad
       FROM estudiantes 
       GROUP BY estado
-    `)
-      .all()
+    `
 
     return { porCarrera, porTrayecto, porEstado }
   },
@@ -947,143 +745,113 @@ export const estudiantesService = {
 
 // Funciones para Profesores
 export const profesoresService = {
-  getAll() {
-    return db
-      .prepare(`
+  async getAll() {
+    const { rows } = await sql`
       SELECT p.*, u.username, u.email as user_email
       FROM profesores p
       LEFT JOIN usuarios u ON p.usuario_id = u.id
       ORDER BY p.created_at DESC
-    `)
-      .all()
+    `
+    return rows
   },
 
-  getById(id: number) {
-    return db
-      .prepare(`
+  async getById(id: number) {
+    const { rows } = await sql`
       SELECT p.*, u.username, u.email as user_email
       FROM profesores p
       LEFT JOIN usuarios u ON p.usuario_id = u.id
-      WHERE p.id = ?
-    `)
-      .get(id)
+      WHERE p.id = ${id}
+    `
+    return rows[0]
   },
 
-  create(profesor: any) {
-    const stmt = db.prepare(`
+  async create(profesor: any) {
+    const { rows } = await sql`
       INSERT INTO profesores (
         cedula, nombres, apellidos, email, telefono,
         especialidad, titulo_academico, usuario_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-
-    const result = stmt.run(
-      profesor.cedula,
-      profesor.nombres,
-      profesor.apellidos,
-      profesor.email,
-      profesor.telefono,
-      profesor.especialidad,
-      profesor.titulo_academico,
-      profesor.usuario_id,
-    )
-
-    return this.getById(result.lastInsertRowid as number)
+      ) VALUES (
+        ${profesor.cedula}, ${profesor.nombres}, ${profesor.apellidos}, 
+        ${profesor.email}, ${profesor.telefono}, ${profesor.especialidad}, 
+        ${profesor.titulo_academico}, ${profesor.usuario_id}
+      )
+      RETURNING *
+    `
+    return rows[0]
   },
 
-  update(id: number, updates: any) {
-    const stmt = db.prepare(`
+  async update(id: number, updates: any) {
+    const { rows } = await sql`
       UPDATE profesores 
-      SET nombres = COALESCE(?, nombres),
-          apellidos = COALESCE(?, apellidos),
-          email = COALESCE(?, email),
-          telefono = COALESCE(?, telefono),
-          especialidad = COALESCE(?, especialidad),
-          titulo_academico = COALESCE(?, titulo_academico),
-          estado = COALESCE(?, estado),
+      SET nombres = COALESCE(${updates.nombres}, nombres),
+          apellidos = COALESCE(${updates.apellidos}, apellidos),
+          email = COALESCE(${updates.email}, email),
+          telefono = COALESCE(${updates.telefono}, telefono),
+          especialidad = COALESCE(${updates.especialidad}, especialidad),
+          titulo_academico = COALESCE(${updates.titulo_academico}, titulo_academico),
+          estado = COALESCE(${updates.estado}, estado),
           updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `)
-    stmt.run(
-      updates.nombres,
-      updates.apellidos,
-      updates.email,
-      updates.telefono,
-      updates.especialidad,
-      updates.titulo_academico,
-      updates.estado,
-      id,
-    )
-    return this.getById(id)
+      WHERE id = ${id}
+      RETURNING *
+    `
+    return rows[0]
   },
 }
 
 // Funciones para Materias
 export const materiasService = {
-  getAll() {
-    return db
-      .prepare(`
+  async getAll() {
+    const { rows } = await sql`
       SELECT m.*, c.nombre as carrera_nombre, c.codigo as carrera_codigo
       FROM materias m
       LEFT JOIN carreras c ON m.carrera_id = c.id
       ORDER BY m.trayecto, m.trimestre
-    `)
-      .all()
+    `
+    return rows
   },
 
-  getByCarrera(carreraId: number) {
-    return db
-      .prepare(`
+  async getByCarrera(carreraId: number) {
+    const { rows } = await sql`
       SELECT m.*, c.nombre as carrera_nombre, c.codigo as carrera_codigo
       FROM materias m
       LEFT JOIN carreras c ON m.carrera_id = c.id
-      WHERE m.carrera_id = ?
+      WHERE m.carrera_id = ${carreraId}
       ORDER BY m.trayecto, m.trimestre
-    `)
-      .all(carreraId)
+    `
+    return rows
   },
 
-  create(materia: any) {
-    const stmt = db.prepare(`
+  async create(materia: any) {
+    const { rows } = await sql`
       INSERT INTO materias (
         nombre, codigo, creditos, horas_teoricas, horas_practicas,
         trayecto, trimestre, carrera_id, prerequisitos, descripcion
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-
-    const result = stmt.run(
-      materia.nombre,
-      materia.codigo,
-      materia.creditos,
-      materia.horas_teoricas,
-      materia.horas_practicas,
-      materia.trayecto,
-      materia.trimestre,
-      materia.carrera_id,
-      materia.prerequisitos,
-      materia.descripcion,
-    )
-
-    return this.getById(result.lastInsertRowid as number)
+      ) VALUES (
+        ${materia.nombre}, ${materia.codigo}, ${materia.creditos}, 
+        ${materia.horas_teoricas}, ${materia.horas_practicas}, ${materia.trayecto}, 
+        ${materia.trimestre}, ${materia.carrera_id}, ${materia.prerequisitos}, 
+        ${materia.descripcion}
+      )
+      RETURNING *
+    `
+    return rows[0]
   },
 
-  getById(id: number) {
-    return db
-      .prepare(`
+  async getById(id: number) {
+    const { rows } = await sql`
       SELECT m.*, c.nombre as carrera_nombre, c.codigo as carrera_codigo
       FROM materias m
       LEFT JOIN carreras c ON m.carrera_id = c.id
-      WHERE m.id = ?
-    `)
-      .get(id)
+      WHERE m.id = ${id}
+    `
+    return rows[0]
   },
 }
 
 // Funciones para Inscripciones
 export const inscripcionesService = {
-  getAll() {
-    return db
-      .prepare(`
+  async getAll() {
+    const { rows } = await sql`
       SELECT i.*, 
              e.nombres || ' ' || e.apellidos as estudiante_nombre,
              e.cedula as estudiante_cedula,
@@ -1097,13 +865,12 @@ export const inscripcionesService = {
       JOIN materias m ON s.materia_id = m.id
       JOIN periodos_academicos p ON i.periodo_id = p.id
       ORDER BY i.created_at DESC
-    `)
-      .all()
+    `
+    return rows
   },
 
-  getByEstudiante(estudianteId: number) {
-    return db
-      .prepare(`
+  async getByEstudiante(estudianteId: number) {
+    const { rows } = await sql`
       SELECT i.*, 
              m.nombre as materia_nombre,
              m.codigo as materia_codigo,
@@ -1113,33 +880,31 @@ export const inscripcionesService = {
       JOIN secciones s ON i.seccion_id = s.id
       JOIN materias m ON s.materia_id = m.id
       JOIN periodos_academicos p ON i.periodo_id = p.id
-      WHERE i.estudiante_id = ?
+      WHERE i.estudiante_id = ${estudianteId}
       ORDER BY i.created_at DESC
-    `)
-      .all(estudianteId)
+    `
+    return rows
   },
 
-  create(inscripcion: any) {
-    const stmt = db.prepare(`
+  async create(inscripcion: any) {
+    const { rows } = await sql`
       INSERT INTO inscripciones (estudiante_id, seccion_id, periodo_id, tipo)
-      VALUES (?, ?, ?, ?)
-    `)
-
-    const result = stmt.run(inscripcion.estudiante_id, inscripcion.seccion_id, inscripcion.periodo_id, inscripcion.tipo)
+      VALUES (${inscripcion.estudiante_id}, ${inscripcion.seccion_id}, ${inscripcion.periodo_id}, ${inscripcion.tipo})
+      RETURNING *
+    `
 
     // Actualizar cupos ocupados
-    db.prepare(`
+    await sql`
       UPDATE secciones 
       SET cupos_ocupados = cupos_ocupados + 1 
-      WHERE id = ?
-    `).run(inscripcion.seccion_id)
+      WHERE id = ${inscripcion.seccion_id}
+    `
 
-    return this.getById(result.lastInsertRowid as number)
+    return rows[0]
   },
 
-  getById(id: number) {
-    return db
-      .prepare(`
+  async getById(id: number) {
+    const { rows } = await sql`
       SELECT i.*, 
              e.nombres || ' ' || e.apellidos as estudiante_nombre,
              e.cedula as estudiante_cedula,
@@ -1152,168 +917,83 @@ export const inscripcionesService = {
       JOIN secciones s ON i.seccion_id = s.id
       JOIN materias m ON s.materia_id = m.id
       JOIN periodos_academicos p ON i.periodo_id = p.id
-      WHERE i.id = ?
-    `)
-      .get(id)
+      WHERE i.id = ${id}
+    `
+    return rows[0]
   },
 
-  getEstadisticas() {
-    const porTipo = db
-      .prepare(`
+  async getEstadisticas() {
+    const { rows: porTipo } = await sql`
       SELECT tipo, COUNT(*) as cantidad
       FROM inscripciones
       GROUP BY tipo
-    `)
-      .all()
+    `
 
-    const porPeriodo = db
-      .prepare(`
+    const { rows: porPeriodo } = await sql`
       SELECT p.nombre as periodo, COUNT(i.id) as cantidad
       FROM inscripciones i
       JOIN periodos_academicos p ON i.periodo_id = p.id
       GROUP BY p.nombre
-    `)
-      .all()
+    `
 
     return { porTipo, porPeriodo }
   },
 }
 
-// Funciones para Secciones
-export const seccionesService = {
-  getAll() {
-    return db
-      .prepare(`
-      SELECT s.*, 
-             m.nombre as materia_nombre,
-             m.codigo as materia_codigo,
-             p.nombres || ' ' || p.apellidos as profesor_nombre,
-             pe.nombre as periodo_nombre
-      FROM secciones s
-      JOIN materias m ON s.materia_id = m.id
-      LEFT JOIN profesores p ON s.profesor_id = p.id
-      JOIN periodos_academicos pe ON s.periodo_id = pe.id
-      ORDER BY m.nombre, s.seccion
-    `)
-      .all()
-  },
-
-  getByPeriodo(periodoId: number) {
-    return db
-      .prepare(`
-      SELECT s.*, 
-             m.nombre as materia_nombre,
-             m.codigo as materia_codigo,
-             p.nombres || ' ' || p.apellidos as profesor_nombre
-      FROM secciones s
-      JOIN materias m ON s.materia_id = m.id
-      LEFT JOIN profesores p ON s.profesor_id = p.id
-      WHERE s.periodo_id = ?
-      ORDER BY m.nombre, s.seccion
-    `)
-      .all(periodoId)
-  },
-
-  create(seccion: any) {
-    const stmt = db.prepare(`
-      INSERT INTO secciones (
-        materia_id, profesor_id, periodo_id, seccion,
-        cupos_maximos, aula
-      ) VALUES (?, ?, ?, ?, ?, ?)
-    `)
-
-    const result = stmt.run(
-      seccion.materia_id,
-      seccion.profesor_id,
-      seccion.periodo_id,
-      seccion.seccion,
-      seccion.cupos_maximos,
-      seccion.aula,
-    )
-
-    return this.getById(result.lastInsertRowid as number)
-  },
-
-  getById(id: number) {
-    return db
-      .prepare(`
-      SELECT s.*, 
-             m.nombre as materia_nombre,
-             m.codigo as materia_codigo,
-             p.nombres || ' ' || p.apellidos as profesor_nombre,
-             pe.nombre as periodo_nombre
-      FROM secciones s
-      JOIN materias m ON s.materia_id = m.id
-      LEFT JOIN profesores p ON s.profesor_id = p.id
-      JOIN periodos_academicos pe ON s.periodo_id = pe.id
-      WHERE s.id = ?
-    `)
-      .get(id)
-  },
-}
-
 // Funciones para Constancias
 export const constanciasService = {
-  create(constancia: any) {
+  async create(constancia: any) {
     const codigoVerificacion = `UNI-2024-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
 
-    const stmt = db.prepare(`
+    const { rows } = await sql`
       INSERT INTO constancias (
         estudiante_id, tipo, codigo_verificacion, contenido,
         valida_hasta, ip_generacion
-      ) VALUES (?, ?, ?, ?, ?, ?)
-    `)
-
-    const result = stmt.run(
-      constancia.estudiante_id,
-      constancia.tipo,
-      codigoVerificacion,
-      constancia.contenido,
-      constancia.valida_hasta,
-      constancia.ip_generacion,
-    )
-
-    return this.getById(result.lastInsertRowid as number)
+      ) VALUES (
+        ${constancia.estudiante_id}, ${constancia.tipo}, ${codigoVerificacion}, 
+        ${constancia.contenido}, ${constancia.valida_hasta}, ${constancia.ip_generacion}
+      )
+      RETURNING *
+    `
+    return rows[0]
   },
 
-  getById(id: number) {
-    return db
-      .prepare(`
+  async getById(id: number) {
+    const { rows } = await sql`
       SELECT c.*, 
              e.nombres || ' ' || e.apellidos as estudiante_nombre,
              e.cedula as estudiante_cedula
       FROM constancias c
       JOIN estudiantes e ON c.estudiante_id = e.id
-      WHERE c.id = ?
-    `)
-      .get(id)
+      WHERE c.id = ${id}
+    `
+    return rows[0]
   },
 
-  getByEstudiante(estudianteId: number) {
-    return db
-      .prepare(`
+  async getByEstudiante(estudianteId: number) {
+    const { rows } = await sql`
       SELECT * FROM constancias 
-      WHERE estudiante_id = ?
+      WHERE estudiante_id = ${estudianteId}
       ORDER BY created_at DESC
-    `)
-      .all(estudianteId)
+    `
+    return rows
   },
 
-  markAsDownloaded(id: number) {
-    db.prepare(`
+  async markAsDownloaded(id: number) {
+    const { rows } = await sql`
       UPDATE constancias 
-      SET descargada = 1 
-      WHERE id = ?
-    `).run(id)
-    return this.getById(id)
+      SET descargada = true 
+      WHERE id = ${id}
+      RETURNING *
+    `
+    return rows[0]
   },
 }
 
 // Funciones para Reportes
 export const reportesService = {
-  getEstudiantesGeneral() {
-    return db
-      .prepare(`
+  async getEstudiantesGeneral() {
+    const { rows } = await sql`
       SELECT 
         e.cedula,
         e.nombres || ' ' || e.apellidos as nombre_completo,
@@ -1325,13 +1005,12 @@ export const reportesService = {
       FROM estudiantes e
       LEFT JOIN carreras c ON e.carrera_id = c.id
       ORDER BY e.nombres, e.apellidos
-    `)
-      .all()
+    `
+    return rows
   },
 
-  getEstudiantesPorCarrera() {
-    return db
-      .prepare(`
+  async getEstudiantesPorCarrera() {
+    const { rows } = await sql`
       SELECT 
         c.nombre as carrera,
         c.codigo,
@@ -1342,13 +1021,12 @@ export const reportesService = {
       LEFT JOIN estudiantes e ON c.id = e.carrera_id
       GROUP BY c.id, c.nombre, c.codigo
       ORDER BY c.nombre
-    `)
-      .all()
+    `
+    return rows
   },
 
-  getAspirantesGeneral() {
-    return db
-      .prepare(`
+  async getAspirantesGeneral() {
+    const { rows } = await sql`
       SELECT 
         a.cedula,
         a.nombres || ' ' || a.apellidos as nombre_completo,
@@ -1359,13 +1037,12 @@ export const reportesService = {
       FROM aspirantes a
       LEFT JOIN carreras c ON a.carrera_id = c.id
       ORDER BY a.fecha_solicitud DESC
-    `)
-      .all()
+    `
+    return rows
   },
 
-  getInscripcionesReporte() {
-    return db
-      .prepare(`
+  async getInscripcionesReporte() {
+    const { rows } = await sql`
       SELECT 
         e.cedula,
         e.nombres || ' ' || e.apellidos as estudiante,
@@ -1380,37 +1057,12 @@ export const reportesService = {
       JOIN secciones s ON i.seccion_id = s.id
       JOIN materias m ON s.materia_id = m.id
       ORDER BY i.fecha_inscripcion DESC
-    `)
-      .all()
+    `
+    return rows
   },
 
-  getHorariosReporte() {
-    return db
-      .prepare(`
-      SELECT 
-        m.nombre as materia,
-        m.codigo,
-        s.seccion,
-        s.aula,
-        p.nombres || ' ' || p.apellidos as profesor,
-        h.dia_semana,
-        h.hora_inicio,
-        h.hora_fin,
-        s.cupos_maximos,
-        s.cupos_ocupados
-      FROM secciones s
-      JOIN materias m ON s.materia_id = m.id
-      LEFT JOIN profesores p ON s.profesor_id = p.id
-      LEFT JOIN horarios h ON s.id = h.seccion_id
-      WHERE s.estado = 'Activa'
-      ORDER BY m.nombre, s.seccion, h.dia_semana, h.hora_inicio
-    `)
-      .all()
-  },
-
-  getProfesoresReporte() {
-    return db
-      .prepare(`
+  async getProfesoresReporte() {
+    const { rows } = await sql`
       SELECT 
         p.cedula,
         p.nombres || ' ' || p.apellidos as nombre_completo,
@@ -1420,56 +1072,57 @@ export const reportesService = {
         COUNT(s.id) as materias_asignadas
       FROM profesores p
       LEFT JOIN secciones s ON p.id = s.profesor_id AND s.estado = 'Activa'
-      GROUP BY p.id
+      GROUP BY p.id, p.cedula, p.nombres, p.apellidos, p.especialidad, p.titulo_academico, p.estado
       ORDER BY p.nombres, p.apellidos
-    `)
-      .all()
+    `
+    return rows
   },
 }
 
-// Funciones para Auditoría
-export const auditoriaService = {
-  registrar(
-    tabla: string,
-    operacion: string,
-    registroId: number,
-    datosAnteriores: any,
-    datosNuevos: any,
-    usuarioId?: number,
-  ) {
-    const stmt = db.prepare(`
-      INSERT INTO auditoria (tabla, operacion, registro_id, datos_anteriores, datos_nuevos, usuario_id)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `)
+// Funciones para Estadísticas
+export const estadisticasService = {
+  async getResumenGeneral() {
+    const { rows: estudiantes } = await sql`SELECT COUNT(*) as count FROM estudiantes`
+    const { rows: profesores } = await sql`SELECT COUNT(*) as count FROM profesores`
+    const { rows: materias } = await sql`SELECT COUNT(*) as count FROM materias`
+    const { rows: aspirantes } = await sql`SELECT COUNT(*) as count FROM aspirantes`
 
-    stmt.run(
-      tabla,
-      operacion,
-      registroId,
-      datosAnteriores ? JSON.stringify(datosAnteriores) : null,
-      datosNuevos ? JSON.stringify(datosNuevos) : null,
-      usuarioId,
-    )
+    return {
+      estudiantes: estudiantes[0].count,
+      profesores: profesores[0].count,
+      materias: materias[0].count,
+      aspirantes: aspirantes[0].count,
+    }
   },
 
-  getHistorial(tabla?: string, limit = 100) {
-    let query = `
-      SELECT a.*, u.username
-      FROM auditoria a
-      LEFT JOIN usuarios u ON a.usuario_id = u.id
+  async getEstudiantesPorCarrera() {
+    const { rows } = await sql`
+      SELECT c.nombre, COUNT(e.id) as cantidad
+      FROM carreras c
+      LEFT JOIN estudiantes e ON c.id = e.carrera_id
+      GROUP BY c.nombre
     `
 
-    if (tabla) {
-      query += ` WHERE a.tabla = '${tabla}'`
-    }
+    const result: { [key: string]: number } = {}
+    rows.forEach((row: any) => {
+      result[row.nombre] = Number.parseInt(row.cantidad)
+    })
 
-    query += ` ORDER BY a.fecha DESC LIMIT ${limit}`
+    return result
+  },
 
-    return db.prepare(query).all()
+  async getEstudiantesPorTrayecto() {
+    const { rows } = await sql`
+      SELECT trayecto_actual, COUNT(*) as cantidad
+      FROM estudiantes 
+      GROUP BY trayecto_actual
+    `
+
+    const result: { [key: string]: number } = {}
+    rows.forEach((row: any) => {
+      result[`Trayecto ${row.trayecto_actual}`] = Number.parseInt(row.cantidad)
+    })
+
+    return result
   },
 }
-
-// Inicializar la base de datos al importar el módulo
-initializeDatabase()
-
-export default db
