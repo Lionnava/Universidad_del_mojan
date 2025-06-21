@@ -168,3 +168,84 @@ CREATE INDEX idx_inscripciones_estudiante ON inscripciones(estudiante_id);
 CREATE INDEX idx_inscripciones_seccion ON inscripciones(seccion_id);
 CREATE INDEX idx_calificaciones_evaluacion ON calificaciones(evaluacion_id);
 CREATE INDEX idx_calificaciones_estudiante ON calificaciones(estudiante_id);
+);
+
+# Este bloque no ejecuta código, solo muestra el SQL que el usuario debe copiar.
+# El formato es para claridad y para que el usuario pueda copiarlo fácilmente.
+
+print("""
+-- =================================================================
+-- ESTRUCTURA PARA GESTIÓN DE PERÍODOS E INSCRIPCIONES
+-- (Agrega esto al final de tu archivo 01-create-database.sql)
+-- =================================================================
+
+-- ========= Tipos de Datos Personalizados (ENUMs) =========
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'periodo_status') THEN
+        CREATE TYPE public.periodo_status AS ENUM (
+            'PROXIMAMENTE',
+            'PLANIFICACION',
+            'ABIERTO',
+            'CERRADO',
+            'FINALIZADO'
+        );
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'inscripcion_status') THEN
+        CREATE TYPE public.inscripcion_status AS ENUM (
+            'INSCRITO',
+            'CURSANDO',
+            'RETIRADO',
+            'APROBADO',
+            'REPROBADO'
+        );
+    END IF;
+END$$;
+
+
+-- ========= Tabla: PeriodosAcademicos =========
+CREATE TABLE IF NOT EXISTS public.periodos_academicos (
+    id SERIAL PRIMARY KEY,
+    codigo VARCHAR(20) UNIQUE NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NOT NULL,
+    status public.periodo_status NOT NULL DEFAULT 'PROXIMAMENTE',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE public.periodos_academicos IS 'Define los ciclos académicos (trimestres) de la institución.';
+
+
+-- ========= Tabla: Secciones =========
+CREATE TABLE IF NOT EXISTS public.secciones (
+    id SERIAL PRIMARY KEY,
+    materia_id INT NOT NULL REFERENCES public.materias(id),
+    profesor_id INT REFERENCES public.profesores(id) ON DELETE SET NULL, -- Si se elimina un profesor, la sección queda sin asignar
+    periodo_id INT NOT NULL REFERENCES public.periodos_academicos(id) ON DELETE CASCADE, -- Si se elimina un período, se eliminan sus secciones
+    cupos INT NOT NULL DEFAULT 0,
+    horario JSONB, -- Ej: {"lunes": "8-10am", "miercoles": "8-10am"}
+    aula VARCHAR(50),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE public.secciones IS 'Oferta académica para un período específico. Una materia puede tener varias secciones.';
+
+
+-- ========= Tabla: Inscripciones =========
+CREATE TABLE IF NOT EXISTS public.inscripciones (
+    id SERIAL PRIMARY KEY,
+    estudiante_id INT NOT NULL REFERENCES public.estudiantes(id) ON DELETE CASCADE,
+    seccion_id INT NOT NULL REFERENCES public.secciones(id) ON DELETE CASCADE,
+    status public.inscripcion_status NOT NULL DEFAULT 'INSCRITO',
+    nota_definitiva NUMERIC(4, 2), -- Ej: 18.50, puede ser nulo hasta que se consolide
+    fecha_inscripcion TIMESTAMPTZ NOT NULL DEFAULT now(),
+    
+    CONSTRAINT unique_estudiante_seccion UNIQUE (estudiante_id, seccion_id)
+);
+
+COMMENT ON TABLE public.inscripciones IS 'Registra la inscripción de un estudiante en una sección para un período.';
+COMMENT ON COLUMN public.inscripciones.nota_definitiva IS 'Nota final del estudiante en esa sección. Nulo mientras está cursando.';
+""")
