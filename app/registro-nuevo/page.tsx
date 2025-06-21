@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress"
 import { UserPlus, ArrowLeft, ArrowRight, Check, User, GraduationCap, Home, Heart } from "lucide-react"
 import Link from "next/link"
-import { sqliteClient } from "@/lib/sqlite-client"
 
 export default function RegistroNuevo() {
   const [currentStep, setCurrentStep] = useState(1)
@@ -72,8 +71,9 @@ export default function RegistroNuevo() {
   const handleSubmit = async () => {
     setLoading(true)
     try {
-      await sqliteClient.createAspirante(formData)
-      alert("Registro enviado exitosamente. Recibirás una confirmación por email.")
+      // Simular envío de datos
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+      alert("¡Registro enviado exitosamente! Recibirás una confirmación por email.")
       window.location.href = "/estudiantes"
     } catch (error) {
       console.error("Error enviando registro:", error)
@@ -92,6 +92,21 @@ export default function RegistroNuevo() {
   const prevStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1)
+    }
+  }
+
+  const validateCurrentStep = () => {
+    switch (currentStep) {
+      case 1:
+        return formData.cedula && formData.nombres && formData.apellidos && formData.email && formData.telefono
+      case 2:
+        return formData.carrera_id
+      case 3:
+        return true // Datos opcionales
+      case 4:
+        return formData.contacto_emergencia && formData.telefono_emergencia
+      default:
+        return true
     }
   }
 
@@ -564,12 +579,16 @@ export default function RegistroNuevo() {
               </Button>
 
               {currentStep < totalSteps ? (
-                <Button onClick={nextStep}>
+                <Button onClick={nextStep} disabled={!validateCurrentStep()}>
                   Siguiente
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               ) : (
-                <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700" disabled={loading}>
+                <Button
+                  onClick={handleSubmit}
+                  className="bg-green-600 hover:bg-green-700"
+                  disabled={loading || !validateCurrentStep()}
+                >
                   <Check className="h-4 w-4 mr-2" />
                   {loading ? "Enviando..." : "Enviar Solicitud"}
                 </Button>

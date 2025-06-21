@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { User, BookOpen, Calendar, FileText, Award, Bell, Eye, Clock, TrendingUp } from "lucide-react"
+import { User, BookOpen, Calendar, Award, FileText, Clock, CheckCircle, AlertCircle, Download, Eye } from "lucide-react"
 import Link from "next/link"
 
 export default function EstudianteDashboard() {
@@ -15,31 +15,95 @@ export default function EstudianteDashboard() {
     carrera: "Ingeniería en Informática",
     trayecto: 2,
     trimestre: 1,
-    periodo: "2024-2025",
     promedio: 17.5,
-    creditosAprobados: 45,
-    creditosTotales: 120,
+    creditos: 45,
     estado: "Activo",
   }
 
-  const materiasActuales = [
-    { nombre: "Base de Datos I", profesor: "Ing. Martínez", horario: "Mar-Jue 10:00-12:00", aula: "Lab 204" },
-    { nombre: "Algoritmos y Estructuras", profesor: "Dr. García", horario: "Lun-Mie 14:00-16:00", aula: "Aula 205" },
-    { nombre: "Ingeniería de Software I", profesor: "Ing. López", horario: "Vie 08:00-12:00", aula: "Aula 301" },
+  const materiasInscritas = [
+    {
+      nombre: "Base de Datos I",
+      codigo: "INF201",
+      creditos: 4,
+      profesor: "Ing. Martínez",
+      horario: "Mar-Jue 10:00-12:00",
+      aula: "Lab 201",
+      nota: 18.5,
+      estado: "Cursando",
+    },
+    {
+      nombre: "Algoritmos y Estructuras",
+      codigo: "INF202",
+      creditos: 5,
+      profesor: "Dr. García",
+      horario: "Lun-Mie-Vie 8:00-10:00",
+      aula: "Aula 101",
+      nota: 16.8,
+      estado: "Cursando",
+    },
+    {
+      nombre: "Matemática III",
+      codigo: "MAT201",
+      creditos: 4,
+      profesor: "Dr. López",
+      horario: "Mar-Jue 14:00-16:00",
+      aula: "Aula 104",
+      nota: 17.2,
+      estado: "Cursando",
+    },
   ]
 
-  const notasRecientes = [
-    { materia: "Base de Datos I", evaluacion: "Parcial 1", nota: 18, fecha: "2024-10-15" },
-    { materia: "Algoritmos", evaluacion: "Proyecto 1", nota: 17, fecha: "2024-10-12" },
-    { materia: "Ing. Software", evaluacion: "Tarea 1", nota: 19, fecha: "2024-10-10" },
+  const evaluacionesPendientes = [
+    {
+      materia: "Base de Datos I",
+      tipo: "Parcial 2",
+      fecha: "2024-11-15",
+      peso: "30%",
+      estado: "Próxima",
+    },
+    {
+      materia: "Algoritmos y Estructuras",
+      tipo: "Proyecto Final",
+      fecha: "2024-11-20",
+      peso: "40%",
+      estado: "En Proceso",
+    },
   ]
 
-  const proximasEvaluaciones = [
-    { materia: "Base de Datos I", tipo: "Parcial 2", fecha: "2024-11-15", dias: 12 },
-    { materia: "Algoritmos", tipo: "Proyecto Final", fecha: "2024-11-20", dias: 17 },
+  const constanciasDisponibles = [
+    {
+      tipo: "Constancia de Notas",
+      descripcion: "Certificado de calificaciones del período actual",
+      disponible: true,
+    },
+    {
+      tipo: "Constancia de Estudios",
+      descripcion: "Certificado de estudios regulares",
+      disponible: true,
+    },
+    {
+      tipo: "Constancia de Inscripción",
+      descripcion: "Certificado de inscripción formal",
+      disponible: true,
+    },
   ]
 
-  const progresoCarrera = (estudiante.creditosAprobados / estudiante.creditosTotales) * 100
+  const proximasClases = [
+    {
+      materia: "Base de Datos I",
+      fecha: "Hoy",
+      hora: "10:00",
+      aula: "Lab 201",
+      tema: "Normalización de BD",
+    },
+    {
+      materia: "Algoritmos y Estructuras",
+      fecha: "Mañana",
+      hora: "08:00",
+      aula: "Aula 101",
+      tema: "Árboles Binarios",
+    },
+  ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-4 md:p-6">
@@ -47,12 +111,20 @@ export default function EstudianteDashboard() {
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-slate-800">
-            Bienvenido, {estudiante.nombres} {estudiante.apellidos}
+            Bienvenida, {estudiante.nombres} {estudiante.apellidos}
           </h1>
-          <p className="text-slate-600">Panel de Control Estudiantil</p>
-          <Badge variant="default" className="text-sm">
-            {estudiante.carrera} - Trayecto {estudiante.trayecto}
-          </Badge>
+          <p className="text-slate-600">Portal Estudiantil V29</p>
+          <div className="flex justify-center gap-2">
+            <Badge variant="default" className="text-sm">
+              {estudiante.carrera}
+            </Badge>
+            <Badge variant="outline" className="text-sm">
+              Trayecto {estudiante.trayecto} - Trimestre {estudiante.trimestre}
+            </Badge>
+            <Badge variant="outline" className="text-sm">
+              Promedio: {estudiante.promedio}
+            </Badge>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -60,43 +132,46 @@ export default function EstudianteDashboard() {
           <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                <div>
+                  <p className="text-sm opacity-90">Materias Inscritas</p>
+                  <p className="text-2xl font-bold">{materiasInscritas.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
                 <Award className="h-5 w-5" />
                 <div>
-                  <p className="text-sm opacity-90">Promedio General</p>
+                  <p className="text-sm opacity-90">Promedio</p>
                   <p className="text-2xl font-bold">{estudiante.promedio}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                <div>
-                  <p className="text-sm opacity-90">Materias Actuales</p>
-                  <p className="text-2xl font-bold">{materiasActuales.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+
           <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
+                <FileText className="h-5 w-5" />
                 <div>
-                  <p className="text-sm opacity-90">Créditos Aprobados</p>
-                  <p className="text-2xl font-bold">{estudiante.creditosAprobados}</p>
+                  <p className="text-sm opacity-90">Créditos</p>
+                  <p className="text-2xl font-bold">{estudiante.creditos}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
+
           <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
+                <CheckCircle className="h-5 w-5" />
                 <div>
-                  <p className="text-sm opacity-90">Período</p>
-                  <p className="text-lg font-bold">{estudiante.periodo}</p>
+                  <p className="text-sm opacity-90">Estado</p>
+                  <p className="text-lg font-bold">{estudiante.estado}</p>
                 </div>
               </div>
             </CardContent>
@@ -107,51 +182,39 @@ export default function EstudianteDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Progreso de Carrera */}
+            {/* Materias Inscritas */}
             <Card>
               <CardHeader>
-                <CardTitle>Progreso de Carrera</CardTitle>
-                <CardDescription>Avance en créditos académicos</CardDescription>
+                <CardTitle>Mis Materias</CardTitle>
+                <CardDescription>Materias inscritas en el período actual</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between text-sm">
-                    <span>Créditos completados</span>
-                    <span>
-                      {estudiante.creditosAprobados} / {estudiante.creditosTotales}
-                    </span>
-                  </div>
-                  <Progress value={progresoCarrera} className="h-3" />
-                  <p className="text-sm text-slate-600">{Math.round(progresoCarrera)}% completado</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Materias Actuales */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Materias del Trimestre Actual</CardTitle>
-                <CardDescription>Tus clases programadas</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {materiasActuales.map((materia, index) => (
+                  {materiasInscritas.map((materia, index) => (
                     <div key={index} className="border rounded-lg p-4 hover:bg-slate-50">
                       <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold">{materia.nombre}</h3>
-                          <p className="text-sm text-slate-600">{materia.profesor}</p>
-                          <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {materia.horario}
-                            </span>
-                            <span>{materia.aula}</span>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold">{materia.nombre}</h3>
+                            <Badge variant="outline">{materia.codigo}</Badge>
+                            <Badge variant="secondary">{materia.creditos} créditos</Badge>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm text-slate-600">
+                            <div>
+                              <span className="font-medium">Profesor:</span> {materia.profesor}
+                            </div>
+                            <div>
+                              <span className="font-medium">Aula:</span> {materia.aula}
+                            </div>
+                            <div className="col-span-2">
+                              <span className="font-medium">Horario:</span> {materia.horario}
+                            </div>
                           </div>
                         </div>
-                        <Button size="sm" variant="outline">
-                          Ver Detalles
-                        </Button>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-green-600">{materia.nota}</div>
+                          <div className="text-xs text-slate-500">Nota Actual</div>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -159,27 +222,60 @@ export default function EstudianteDashboard() {
               </CardContent>
             </Card>
 
-            {/* Notas Recientes */}
+            {/* Evaluaciones Pendientes */}
             <Card>
               <CardHeader>
-                <CardTitle>Calificaciones Recientes</CardTitle>
-                <CardDescription>Últimas evaluaciones registradas</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-orange-500" />
+                  Evaluaciones Pendientes
+                </CardTitle>
+                <CardDescription>Próximas evaluaciones y proyectos</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {notasRecientes.map((nota, index) => (
+                  {evaluacionesPendientes.map((evaluacion, index) => (
                     <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
                       <div>
-                        <p className="font-medium">{nota.materia}</p>
-                        <p className="text-sm text-slate-600">{nota.evaluacion}</p>
-                        <p className="text-xs text-slate-500">{nota.fecha}</p>
+                        <p className="font-medium">{evaluacion.materia}</p>
+                        <p className="text-sm text-slate-600">{evaluacion.tipo}</p>
+                        <p className="text-xs text-slate-500">
+                          {evaluacion.fecha} - Peso: {evaluacion.peso}
+                        </p>
                       </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-blue-600">{nota.nota}</div>
-                        <div className="text-xs text-slate-500">/ 20</div>
-                      </div>
+                      <Badge
+                        variant={evaluacion.estado === "Próxima" ? "destructive" : "secondary"}
+                        className="text-xs"
+                      >
+                        {evaluacion.estado}
+                      </Badge>
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Progreso Académico */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Progreso Académico</CardTitle>
+                <CardDescription>Avance en tu carrera universitaria</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium">Trayecto Actual</span>
+                      <span className="text-sm text-slate-600">{estudiante.trayecto} de 4</span>
+                    </div>
+                    <Progress value={(estudiante.trayecto / 4) * 100} className="h-3" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-medium">Créditos Acumulados</span>
+                      <span className="text-sm text-slate-600">{estudiante.creditos} de 180</span>
+                    </div>
+                    <Progress value={(estudiante.creditos / 180) * 100} className="h-3" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -197,13 +293,13 @@ export default function EstudianteDashboard() {
                   <Link href="/estudiante/constancias">
                     <Button className="w-full justify-start" variant="outline">
                       <FileText className="h-4 w-4 mr-2" />
-                      Descargar Constancias
+                      Solicitar Constancias
                     </Button>
                   </Link>
                   <Link href="/estudiante/notas">
                     <Button className="w-full justify-start" variant="outline">
-                      <Eye className="h-4 w-4 mr-2" />
-                      Ver Todas las Notas
+                      <Award className="h-4 w-4 mr-2" />
+                      Ver Mis Notas
                     </Button>
                   </Link>
                   <Link href="/estudiante/horarios">
@@ -215,31 +311,70 @@ export default function EstudianteDashboard() {
                   <Link href="/estudiante/perfil">
                     <Button className="w-full justify-start" variant="outline">
                       <User className="h-4 w-4 mr-2" />
-                      Actualizar Perfil
+                      Mi Perfil
+                    </Button>
+                  </Link>
+                  <Link href="/">
+                    <Button className="w-full justify-start" variant="outline">
+                      🏠 Volver al Inicio
                     </Button>
                   </Link>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Próximas Evaluaciones */}
+            {/* Constancias Disponibles */}
             <Card>
               <CardHeader>
-                <CardTitle>Próximas Evaluaciones</CardTitle>
-                <CardDescription>No olvides estas fechas importantes</CardDescription>
+                <CardTitle>Constancias Disponibles</CardTitle>
+                <CardDescription>Documentos que puedes descargar</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {proximasEvaluaciones.map((evaluacion, index) => (
+                  {constanciasDisponibles.map((constancia, index) => (
+                    <div key={index} className="border rounded-lg p-3">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{constancia.tipo}</p>
+                          <p className="text-xs text-slate-600">{constancia.descripcion}</p>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline">
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Download className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Próximas Clases */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Próximas Clases
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {proximasClases.map((clase, index) => (
                     <div key={index} className="border rounded-lg p-3">
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="font-medium">{evaluacion.materia}</p>
-                          <p className="text-sm text-slate-600">{evaluacion.tipo}</p>
-                          <p className="text-xs text-slate-500">{evaluacion.fecha}</p>
+                          <p className="font-medium text-sm">{clase.materia}</p>
+                          <p className="text-xs text-slate-600">Tema: {clase.tema}</p>
+                          <p className="text-xs text-slate-500">
+                            {clase.hora} - {clase.aula}
+                          </p>
                         </div>
-                        <Badge variant={evaluacion.dias <= 7 ? "destructive" : "secondary"}>
-                          {evaluacion.dias} días
+                        <Badge variant="outline" className="text-xs">
+                          {clase.fecha}
                         </Badge>
                       </div>
                     </div>
@@ -248,23 +383,30 @@ export default function EstudianteDashboard() {
               </CardContent>
             </Card>
 
-            {/* Notificaciones */}
+            {/* Información Personal */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-4 w-4" />
-                  Notificaciones
-                </CardTitle>
+                <CardTitle>Mi Información</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm font-medium text-blue-800">Nueva calificación disponible</p>
-                    <p className="text-xs text-blue-600">Base de Datos I - Parcial 1</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Cédula:</span>
+                    <span className="font-medium">{estudiante.cedula}</span>
                   </div>
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm font-medium text-yellow-800">Recordatorio de evaluación</p>
-                    <p className="text-xs text-yellow-600">Algoritmos - Proyecto Final en 17 días</p>
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Carrera:</span>
+                    <span className="font-medium">{estudiante.carrera}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Trayecto:</span>
+                    <span className="font-medium">{estudiante.trayecto}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-600">Estado:</span>
+                    <Badge variant="outline" className="text-xs">
+                      {estudiante.estado}
+                    </Badge>
                   </div>
                 </div>
               </CardContent>

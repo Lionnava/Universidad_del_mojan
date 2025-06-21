@@ -15,6 +15,7 @@ import {
   BarChart3,
   Settings,
   Database,
+  Shield,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -103,11 +104,17 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-slate-800">Panel de Administración</h1>
+          <h1 className="text-3xl font-bold text-slate-800">Panel de Administración V29</h1>
           <p className="text-slate-600">Control y supervisión del sistema universitario</p>
-          <Badge variant="default" className="text-sm">
-            Acceso Gerencial - Período 2024-2025
-          </Badge>
+          <div className="flex justify-center gap-2">
+            <Badge variant="default" className="text-sm">
+              <Shield className="h-3 w-3 mr-1" />
+              Acceso Gerencial
+            </Badge>
+            <Badge variant="outline" className="text-sm">
+              Período 2024-2025
+            </Badge>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -270,6 +277,17 @@ export default function AdminDashboard() {
                       </Link>
                     )
                   })}
+                  <Link href="/">
+                    <Button variant="outline" className="w-full justify-start h-auto p-3">
+                      <div className="p-2 rounded-md bg-indigo-500 mr-3">
+                        <span className="text-white">🏠</span>
+                      </div>
+                      <div className="text-left">
+                        <div className="font-medium">Volver al Inicio</div>
+                        <div className="text-xs text-slate-500">Dashboard principal</div>
+                      </div>
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
@@ -296,6 +314,37 @@ export default function AdminDashboard() {
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Reportes descargados</span>
                     <Badge variant="outline">+8</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sistema V29 */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Sistema V29</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Versión</span>
+                    <Badge variant="default">29.0.0</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Modo</span>
+                    <Badge variant="default" className="bg-green-600">
+                      PRODUCCIÓN
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Base de Datos</span>
+                    <Badge variant="outline" className="text-green-600">
+                      Activa
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Último Backup</span>
+                    <Badge variant="outline">Hoy 02:00</Badge>
                   </div>
                 </div>
               </CardContent>

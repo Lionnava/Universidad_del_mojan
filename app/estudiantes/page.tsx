@@ -20,7 +20,6 @@ import {
   CheckCircle,
 } from "lucide-react"
 import Link from "next/link"
-import { sqliteClient } from "@/lib/sqlite-client"
 
 export default function EstudiantesPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -29,33 +28,82 @@ export default function EstudiantesPage() {
   const [inscripciones, setInscripciones] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Datos de ejemplo para desarrollo
+  const aspirantesEjemplo = [
+    {
+      id: 1,
+      nombres: "Carlos Eduardo",
+      apellidos: "Rodríguez Silva",
+      cedula: "21123456",
+      carrera_nombre: "Medicina",
+      estado: "Pendiente",
+      fecha_solicitud: "2024-01-15",
+    },
+    {
+      id: 2,
+      nombres: "Ana Lucía",
+      apellidos: "Martínez López",
+      cedula: "21234567",
+      carrera_nombre: "Derecho",
+      estado: "En Revisión",
+      fecha_solicitud: "2024-01-20",
+    },
+  ]
+
+  const estudiantesEjemplo = [
+    {
+      id: 1,
+      nombres: "María José",
+      apellidos: "González Pérez",
+      cedula: "20123456",
+      carrera_nombre: "Ingeniería en Informática",
+      trayecto_actual: 2,
+      trimestre_actual: 1,
+      estado: "Activo",
+    },
+    {
+      id: 2,
+      nombres: "Pedro José",
+      apellidos: "Sánchez García",
+      cedula: "18123456",
+      carrera_nombre: "Ingeniería en Informática",
+      trayecto_actual: 3,
+      trimestre_actual: 2,
+      estado: "Activo",
+    },
+  ]
+
+  const inscripcionesEjemplo = [
+    {
+      id: 1,
+      estudiante_nombre: "María José González",
+      materia_nombre: "Base de Datos I",
+      seccion: "A",
+      tipo: "Inscripcion",
+      estado: "Activa",
+      fecha_inscripcion: "2024-02-01",
+    },
+  ]
+
   useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
-    try {
-      const [aspirantesData, estudiantesData, inscripcionesData] = await Promise.all([
-        sqliteClient.getAspirantes(),
-        sqliteClient.getEstudiantes(),
-        sqliteClient.getInscripciones(),
-      ])
-
-      setAspirantes(aspirantesData)
-      setEstudiantes(estudiantesData)
-      setInscripciones(inscripcionesData)
-    } catch (error) {
-      console.error("Error cargando datos:", error)
-    } finally {
+    // Simular carga de datos
+    setTimeout(() => {
+      setAspirantes(aspirantesEjemplo)
+      setEstudiantes(estudiantesEjemplo)
+      setInscripciones(inscripcionesEjemplo)
       setLoading(false)
-    }
-  }
+    }, 1000)
+  }, [])
 
   const handleAprobarAspirante = async (id: number) => {
     try {
-      await sqliteClient.aprobarAspirante(id)
       alert("Aspirante aprobado y convertido a estudiante exitosamente")
-      loadData() // Recargar datos
+      // Recargar datos
+      const aspirante = aspirantes.find((a) => a.id === id)
+      if (aspirante) {
+        aspirante.estado = "Aprobado"
+        setAspirantes([...aspirantes])
+      }
     } catch (error) {
       console.error("Error aprobando aspirante:", error)
       alert("Error al aprobar aspirante")

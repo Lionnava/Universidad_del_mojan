@@ -63,7 +63,7 @@ export default function ProfesorDashboard() {
           <h1 className="text-3xl font-bold text-slate-800">
             Bienvenido, {profesor.nombres} {profesor.apellidos}
           </h1>
-          <p className="text-slate-600">Panel de Control Docente</p>
+          <p className="text-slate-600">Panel de Control Docente V29</p>
           <Badge variant="default" className="text-sm">
             {profesor.especialidad} - {profesor.titulo}
           </Badge>
@@ -236,6 +236,11 @@ export default function ProfesorDashboard() {
                     <Button className="w-full justify-start" variant="outline">
                       <BarChart3 className="h-4 w-4 mr-2" />
                       Generar Reportes
+                    </Button>
+                  </Link>
+                  <Link href="/">
+                    <Button className="w-full justify-start" variant="outline">
+                      🏠 Volver al Inicio
                     </Button>
                   </Link>
                 </div>

@@ -1,14 +1,26 @@
 "use client"
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { BookOpen, Clock, Users, Plus, Search, Filter, Calendar, MapPin, User } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { BookOpen, Clock, Users, Plus, Search, Filter, Calendar, MapPin, User, Edit, Trash2 } from "lucide-react"
 import Link from "next/link"
 
 export default function AcademicoPage() {
-  const materias = [
+  const [materias, setMaterias] = useState([
     {
       id: 1,
       nombre: "Cálculo I",
@@ -42,9 +54,9 @@ export default function AcademicoPage() {
       secciones: 2,
       estudiantes: 45,
     },
-  ]
+  ])
 
-  const secciones = [
+  const [secciones, setSecciones] = useState([
     {
       id: 1,
       materia: "Cálculo I",
@@ -65,7 +77,61 @@ export default function AcademicoPage() {
       cupos: 25,
       inscritos: 25,
     },
-  ]
+  ])
+
+  const [showNuevaMateriaDialog, setShowNuevaMateriaDialog] = useState(false)
+  const [showNuevaSeccionDialog, setShowNuevaSeccionDialog] = useState(false)
+  const [showCalendarioDialog, setShowCalendarioDialog] = useState(false)
+  const [showRecursosDialog, setShowRecursosDialog] = useState(false)
+
+  const handleNuevaMateria = () => {
+    const nuevaMateria = {
+      id: materias.length + 1,
+      nombre: "Nueva Materia",
+      codigo: "NUE001",
+      trayecto: "1",
+      trimestre: "1",
+      creditos: 3,
+      profesor: "Por asignar",
+      secciones: 0,
+      estudiantes: 0,
+    }
+    setMaterias([...materias, nuevaMateria])
+    setShowNuevaMateriaDialog(false)
+    alert("Materia creada exitosamente")
+  }
+
+  const handleNuevaSeccion = () => {
+    const nuevaSeccion = {
+      id: secciones.length + 1,
+      materia: "Cálculo I",
+      seccion: "C",
+      horario: "Lun-Mie 14:00-16:00",
+      aula: "Aula 105",
+      profesor: "Dr. García",
+      cupos: 30,
+      inscritos: 0,
+    }
+    setSecciones([...secciones, nuevaSeccion])
+    setShowNuevaSeccionDialog(false)
+    alert("Sección creada exitosamente")
+  }
+
+  const handleEditarMateria = (id: number) => {
+    alert(`Editando materia con ID: ${id}`)
+  }
+
+  const handleVerDetalles = (id: number) => {
+    alert(`Mostrando detalles de materia con ID: ${id}`)
+  }
+
+  const handleGestionarCalendario = () => {
+    setShowCalendarioDialog(true)
+  }
+
+  const handleGestionarRecursos = () => {
+    setShowRecursosDialog(true)
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6">
@@ -145,10 +211,83 @@ export default function AcademicoPage() {
                     <CardTitle>Gestión de Materias</CardTitle>
                     <CardDescription>Administra las asignaturas por trayecto y trimestre</CardDescription>
                   </div>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nueva Materia
-                  </Button>
+                  <Dialog open={showNuevaMateriaDialog} onOpenChange={setShowNuevaMateriaDialog}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Nueva Materia
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Crear Nueva Materia</DialogTitle>
+                        <DialogDescription>Completa los datos de la nueva materia</DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="nombre" className="text-right">
+                            Nombre
+                          </Label>
+                          <Input id="nombre" className="col-span-3" placeholder="Nombre de la materia" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="codigo" className="text-right">
+                            Código
+                          </Label>
+                          <Input id="codigo" className="col-span-3" placeholder="Código de la materia" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="creditos" className="text-right">
+                            Créditos
+                          </Label>
+                          <Input id="creditos" type="number" className="col-span-3" placeholder="Número de créditos" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="trayecto" className="text-right">
+                            Trayecto
+                          </Label>
+                          <Select>
+                            <SelectTrigger className="col-span-3">
+                              <SelectValue placeholder="Seleccionar trayecto" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">Trayecto 1</SelectItem>
+                              <SelectItem value="2">Trayecto 2</SelectItem>
+                              <SelectItem value="3">Trayecto 3</SelectItem>
+                              <SelectItem value="4">Trayecto 4</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="trimestre" className="text-right">
+                            Trimestre
+                          </Label>
+                          <Select>
+                            <SelectTrigger className="col-span-3">
+                              <SelectValue placeholder="Seleccionar trimestre" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">Trimestre 1</SelectItem>
+                              <SelectItem value="2">Trimestre 2</SelectItem>
+                              <SelectItem value="3">Trimestre 3</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="descripcion" className="text-right">
+                            Descripción
+                          </Label>
+                          <Textarea id="descripcion" className="col-span-3" placeholder="Descripción de la materia" />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowNuevaMateriaDialog(false)}>
+                          Cancelar
+                        </Button>
+                        <Button onClick={handleNuevaMateria}>Crear Materia</Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardHeader>
               <CardContent>
@@ -194,10 +333,16 @@ export default function AcademicoPage() {
                             </span>
                           </div>
                           <div className="flex gap-2 pt-2">
-                            <Button size="sm" variant="outline" className="flex-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => handleVerDetalles(materia.id)}
+                            >
                               Ver Detalles
                             </Button>
-                            <Button size="sm" className="flex-1">
+                            <Button size="sm" className="flex-1" onClick={() => handleEditarMateria(materia.id)}>
+                              <Edit className="h-3 w-3 mr-1" />
                               Editar
                             </Button>
                           </div>
@@ -218,10 +363,84 @@ export default function AcademicoPage() {
                     <CardTitle>Gestión de Secciones</CardTitle>
                     <CardDescription>Administra secciones, horarios y asignación de aulas</CardDescription>
                   </div>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nueva Sección
-                  </Button>
+                  <Dialog open={showNuevaSeccionDialog} onOpenChange={setShowNuevaSeccionDialog}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Nueva Sección
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Crear Nueva Sección</DialogTitle>
+                        <DialogDescription>Configura una nueva sección para una materia</DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="materia" className="text-right">
+                            Materia
+                          </Label>
+                          <Select>
+                            <SelectTrigger className="col-span-3">
+                              <SelectValue placeholder="Seleccionar materia" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {materias.map((materia) => (
+                                <SelectItem key={materia.id} value={materia.nombre}>
+                                  {materia.nombre}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="seccion" className="text-right">
+                            Sección
+                          </Label>
+                          <Input id="seccion" className="col-span-3" placeholder="A, B, C..." />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="profesor" className="text-right">
+                            Profesor
+                          </Label>
+                          <Select>
+                            <SelectTrigger className="col-span-3">
+                              <SelectValue placeholder="Seleccionar profesor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="garcia">Dr. García</SelectItem>
+                              <SelectItem value="martinez">Ing. Martínez</SelectItem>
+                              <SelectItem value="lopez">Dr. López</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="aula" className="text-right">
+                            Aula
+                          </Label>
+                          <Input id="aula" className="col-span-3" placeholder="Aula 101, Lab 201..." />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="cupos" className="text-right">
+                            Cupos
+                          </Label>
+                          <Input id="cupos" type="number" className="col-span-3" placeholder="Número de cupos" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="horario" className="text-right">
+                            Horario
+                          </Label>
+                          <Input id="horario" className="col-span-3" placeholder="Lun-Mie-Vie 8:00-10:00" />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setShowNuevaSeccionDialog(false)}>
+                          Cancelar
+                        </Button>
+                        <Button onClick={handleNuevaSeccion}>Crear Sección</Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardHeader>
               <CardContent>
@@ -268,9 +487,11 @@ export default function AcademicoPage() {
                           <td className="p-2">
                             <div className="flex gap-1">
                               <Button size="sm" variant="outline">
-                                Ver
+                                <Edit className="h-3 w-3" />
                               </Button>
-                              <Button size="sm">Editar</Button>
+                              <Button size="sm" variant="outline">
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
                             </div>
                           </td>
                         </tr>
@@ -302,7 +523,9 @@ export default function AcademicoPage() {
                           <span className="font-medium">Período 2024-2025</span>
                         </div>
                         <p className="text-sm text-slate-600">3 trimestres programados</p>
-                        <Button className="w-full">Gestionar Calendario</Button>
+                        <Button className="w-full" onClick={handleGestionarCalendario}>
+                          Gestionar Calendario
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -319,7 +542,9 @@ export default function AcademicoPage() {
                           <span className="font-medium">45 Aulas disponibles</span>
                         </div>
                         <p className="text-sm text-slate-600">12 laboratorios especializados</p>
-                        <Button className="w-full">Gestionar Recursos</Button>
+                        <Button className="w-full" onClick={handleGestionarRecursos}>
+                          Gestionar Recursos
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -328,6 +553,184 @@ export default function AcademicoPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Dialog para Gestionar Calendario */}
+        <Dialog open={showCalendarioDialog} onOpenChange={setShowCalendarioDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Gestión del Calendario Académico</DialogTitle>
+              <DialogDescription>Configura períodos, trimestres y fechas importantes</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Período Académico</Label>
+                  <Input value="2024-2025" />
+                </div>
+                <div>
+                  <Label>Estado</Label>
+                  <Select defaultValue="activo">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="activo">Activo</SelectItem>
+                      <SelectItem value="planificacion">En Planificación</SelectItem>
+                      <SelectItem value="cerrado">Cerrado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Fecha de Inicio</Label>
+                  <Input type="date" defaultValue="2024-09-01" />
+                </div>
+                <div>
+                  <Label>Fecha de Fin</Label>
+                  <Input type="date" defaultValue="2025-07-31" />
+                </div>
+              </div>
+              <div>
+                <Label>Trimestres</Label>
+                <div className="space-y-2 mt-2">
+                  <div className="flex items-center justify-between p-2 border rounded">
+                    <span>Trimestre I: Sep 2024 - Dic 2024</span>
+                    <Button size="sm" variant="outline">
+                      Editar
+                    </Button>
+                  </div>
+                  <div className="flex items-center justify-between p-2 border rounded">
+                    <span>Trimestre II: Ene 2025 - Abr 2025</span>
+                    <Button size="sm" variant="outline">
+                      Editar
+                    </Button>
+                  </div>
+                  <div className="flex items-center justify-between p-2 border rounded">
+                    <span>Trimestre III: May 2025 - Jul 2025</span>
+                    <Button size="sm" variant="outline">
+                      Editar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowCalendarioDialog(false)}>
+                Cerrar
+              </Button>
+              <Button
+                onClick={() => {
+                  alert("Calendario actualizado exitosamente")
+                  setShowCalendarioDialog(false)
+                }}
+              >
+                Guardar Cambios
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog para Gestionar Recursos */}
+        <Dialog open={showRecursosDialog} onOpenChange={setShowRecursosDialog}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Gestión de Recursos</DialogTitle>
+              <DialogDescription>Administra aulas, laboratorios y equipos disponibles</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Tabs defaultValue="aulas">
+                <TabsList>
+                  <TabsTrigger value="aulas">Aulas</TabsTrigger>
+                  <TabsTrigger value="laboratorios">Laboratorios</TabsTrigger>
+                  <TabsTrigger value="equipos">Equipos</TabsTrigger>
+                </TabsList>
+                <TabsContent value="aulas" className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Aulas Disponibles</h3>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nueva Aula
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    {["Aula 101", "Aula 102", "Aula 103", "Aula 201", "Aula 202", "Aula 301"].map((aula) => (
+                      <Card key={aula}>
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{aula}</span>
+                            <Badge variant="outline">Disponible</Badge>
+                          </div>
+                          <p className="text-sm text-slate-600 mt-1">Capacidad: 35 estudiantes</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+                <TabsContent value="laboratorios" className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Laboratorios</h3>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nuevo Laboratorio
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {["Lab Informática 201", "Lab Física 301", "Lab Química 302", "Lab Idiomas 401"].map((lab) => (
+                      <Card key={lab}>
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{lab}</span>
+                            <Badge variant="outline">Activo</Badge>
+                          </div>
+                          <p className="text-sm text-slate-600 mt-1">Equipos especializados disponibles</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+                <TabsContent value="equipos" className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Inventario de Equipos</h3>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Registrar Equipo
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {[
+                      { nombre: "Proyectores", cantidad: 25, estado: "Operativo" },
+                      { nombre: "Computadoras", cantidad: 120, estado: "Operativo" },
+                      { nombre: "Microscopios", cantidad: 15, estado: "Mantenimiento" },
+                      { nombre: "Equipos de Audio", cantidad: 8, estado: "Operativo" },
+                    ].map((equipo, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 border rounded">
+                        <div>
+                          <span className="font-medium">{equipo.nombre}</span>
+                          <span className="text-sm text-slate-600 ml-2">Cantidad: {equipo.cantidad}</span>
+                        </div>
+                        <Badge variant={equipo.estado === "Operativo" ? "default" : "secondary"}>{equipo.estado}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowRecursosDialog(false)}>
+                Cerrar
+              </Button>
+              <Button
+                onClick={() => {
+                  alert("Recursos actualizados exitosamente")
+                  setShowRecursosDialog(false)
+                }}
+              >
+                Guardar Cambios
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
