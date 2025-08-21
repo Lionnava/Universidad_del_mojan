@@ -1,9 +1,8 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
-import { signIn, getSession } from "next-auth/react"
+import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,19 +25,16 @@ export default function LoginPage() {
     setError("")
 
     try {
-      const result = await signIn("credentials", {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
-        redirect: false,
       })
 
-      if (result?.error) {
+      if (error) {
         setError("Credenciales inválidas")
       } else {
-        const session = await getSession()
-        if (session) {
-          router.push("/")
-        }
+        router.push("/dashboard")
       }
     } catch (error) {
       setError("Error al iniciar sesión")

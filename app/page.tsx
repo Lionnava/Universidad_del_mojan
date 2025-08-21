@@ -1,8 +1,8 @@
 "use client"
 
-import { useSession, signOut } from "next-auth/react"
+import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,16 +21,34 @@ import {
 } from "lucide-react"
 
 export default function Dashboard() {
-  const { data: session, status } = useSession()
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const supabase = createClient()
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/login")
-    }
-  }, [status, router])
+    const getUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
 
-  if (status === "loading") {
+      if (!user) {
+        router.push("/auth/login")
+      } else {
+        setUser(user)
+      }
+      setLoading(false)
+    }
+
+    getUser()
+  }, [supabase, router])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push("/auth/login")
+  }
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -38,12 +56,8 @@ export default function Dashboard() {
     )
   }
 
-  if (!session) {
+  if (!user) {
     return null
-  }
-
-  const handleSignOut = () => {
-    signOut({ callbackUrl: "/auth/login" })
   }
 
   return (
@@ -59,11 +73,11 @@ export default function Dashboard() {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <Avatar>
-                  <AvatarFallback>{session.user?.name?.charAt(0) || "U"}</AvatarFallback>
+                  <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
                 </Avatar>
                 <div className="text-sm">
-                  <p className="font-medium">{session.user?.name}</p>
-                  <p className="text-muted-foreground">{session.user?.role}</p>
+                  <p className="font-medium">{user?.user_metadata?.full_name || user?.email}</p>
+                  <p className="text-muted-foreground">{user?.user_metadata?.role || "Usuario"}</p>
                 </div>
               </div>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
@@ -78,7 +92,9 @@ export default function Dashboard() {
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-foreground mb-2">Bienvenido, {session.user?.name}</h2>
+          <h2 className="text-3xl font-bold text-foreground mb-2">
+            Bienvenido, {user?.user_metadata?.full_name || user?.email}
+          </h2>
           <p className="text-muted-foreground">Panel de control del sistema de gestión médica</p>
         </div>
 
