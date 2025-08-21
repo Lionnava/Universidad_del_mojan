@@ -1,5 +1,6 @@
 import NextAuth from "next-auth"
 import type { NextAuthOptions } from "next-auth"
+import CredentialsProvider from "next-auth/providers/credentials"
 
 const testUsers = [
   {
@@ -27,36 +28,44 @@ const testUsers = [
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    {
+    CredentialsProvider({
       id: "credentials",
       name: "Credentials",
-      type: "credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.log("[v0] Missing credentials")
+            return null
+          }
+
+          const user = testUsers.find((u) => u.email === credentials.email && u.password === credentials.password)
+
+          if (user) {
+            console.log("[v0] User authenticated:", user.email)
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              role: user.role,
+            }
+          }
+
+          console.log("[v0] Invalid credentials for:", credentials.email)
+          return null
+        } catch (error) {
+          console.error("[v0] Auth error:", error)
           return null
         }
-
-        const user = testUsers.find((u) => u.email === credentials.email && u.password === credentials.password)
-
-        if (user) {
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-          }
-        }
-
-        return null
       },
-    },
+    }),
   ],
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -77,7 +86,8 @@ export const authOptions: NextAuthOptions = {
     signIn: "/auth/login",
     error: "/auth/error",
   },
-  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-key",
+  secret: process.env.NEXTAUTH_SECRET || "medical-app-secret-key-2024-very-long-and-secure-string-for-jwt-signing",
+  debug: process.env.NODE_ENV === "development",
 }
 
 const handler = NextAuth(authOptions)

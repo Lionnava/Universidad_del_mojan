@@ -2,9 +2,17 @@ import { initializeDatabase } from "./db"
 import type { Patient, Doctor, MedicalRecord } from "@/types/global"
 
 class DatabaseService {
+  private static instance: DatabaseService | null = null
   private db: any = null
 
-  async init() {
+  static getInstance(): DatabaseService {
+    if (!DatabaseService.instance) {
+      DatabaseService.instance = new DatabaseService()
+    }
+    return DatabaseService.instance
+  }
+
+  async initialize() {
     if (!this.db) {
       this.db = await initializeDatabase()
     }
@@ -13,7 +21,7 @@ class DatabaseService {
 
   async getDb() {
     if (!this.db) {
-      await this.init()
+      await this.initialize()
     }
     return this.db
   }
@@ -283,4 +291,5 @@ class DatabaseService {
   }
 }
 
-export const dbService = new DatabaseService()
+export { DatabaseService }
+export const dbService = DatabaseService.getInstance()
