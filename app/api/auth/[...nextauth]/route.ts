@@ -35,27 +35,32 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        console.log("[v0] NextAuth authorize called")
+        try {
+          console.log("[v0] NextAuth authorize called")
 
-        if (!credentials?.email || !credentials?.password) {
-          console.log("[v0] Missing email or password")
+          if (!credentials?.email || !credentials?.password) {
+            console.log("[v0] Missing email or password")
+            return null
+          }
+
+          const user = testUsers.find((u) => u.email === credentials.email && u.password === credentials.password)
+
+          if (user) {
+            console.log("[v0] User found and authenticated:", user.email)
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              role: user.role,
+            }
+          }
+
+          console.log("[v0] Authentication failed for:", credentials.email)
+          return null
+        } catch (error) {
+          console.error("[v0] Error in authorize:", error)
           return null
         }
-
-        const user = testUsers.find((u) => u.email === credentials.email && u.password === credentials.password)
-
-        if (user) {
-          console.log("[v0] User found and authenticated:", user.email)
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-          }
-        }
-
-        console.log("[v0] Authentication failed for:", credentials.email)
-        return null
       },
     }),
   ],
@@ -64,24 +69,46 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.role = user.role
+      try {
+        if (user) {
+          token.role = user.role
+        }
+        return token
+      } catch (error) {
+        console.error("[v0] Error in jwt callback:", error)
+        return token
       }
-      return token
     },
     async session({ session, token }) {
-      if (session.user && token.sub) {
-        session.user.id = token.sub
-        session.user.role = token.role as string
+      try {
+        if (session.user && token.sub) {
+          session.user.id = token.sub
+          session.user.role = token.role as string
+        }
+        return session
+      } catch (error) {
+        console.error("[v0] Error in session callback:", error)
+        return session
       }
-      return session
     },
   },
   pages: {
     signIn: "/auth/login",
   },
-  debug: true,
+  secret: process.env.NEXTAUTH_SECRET,
 }
 
-const handler = NextAuth(authOptions)
-export { handler as GET, handler as POST }
+async function handleAuth(req: Request) {
+  try {
+    const handler = NextAuth(authOptions)
+    return await handler(req)
+  } catch (error) {
+    console.error("[v0] NextAuth handler error:", error)
+    return new Response(JSON.stringify({ error: "Authentication service error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    })
+  }
+}
+
+export { handleAuth as GET, handleAuth as POST }
