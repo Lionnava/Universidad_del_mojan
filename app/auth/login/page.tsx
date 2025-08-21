@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { signIn, setUserSession } from "@/lib/auth-basic"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,15 +25,12 @@ export default function LoginPage() {
     setError("")
 
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+      const { user, error: authError } = await signIn(email, password)
 
-      if (error) {
-        setError("Credenciales inválidas")
+      if (authError || !user) {
+        setError(authError || "Error al iniciar sesión")
       } else {
+        setUserSession(user)
         router.push("/dashboard")
       }
     } catch (error) {
@@ -44,9 +41,9 @@ export default function LoginPage() {
   }
 
   const testCredentials = [
-    { email: "admin@example.com", password: "admin123", role: "Administrador" },
-    { email: "doctor@example.com", password: "doctor123", role: "Doctor" },
-    { email: "nurse@example.com", password: "nurse123", role: "Enfermera" },
+    { email: "admin@hospital.com", password: "cualquier_contraseña", role: "Administrador" },
+    { email: "doctor@hospital.com", password: "cualquier_contraseña", role: "Doctor" },
+    { email: "enfermera@hospital.com", password: "cualquier_contraseña", role: "Enfermera" },
   ]
 
   return (
